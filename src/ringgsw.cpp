@@ -53,6 +53,28 @@ void RGSWCiphertext::SwitchFormat(){
 	}
 }
 
+void RGSWCiphertext::SetElementAtIndex(usint idx, const Poly &valueA, const Poly& valueB){
+	auto it = m_element.begin() + idx;
+	if(it==m_element.end()){
+		m_element.push_back(std::move(LWEForm(valueA,valueB)));
+	}
+	else{
+		m_element.at(idx).SetA(valueA);
+		m_element.at(idx).SetB(valueB);
+	}
+}
+
+void RGSWCiphertext::SetElementAtIndex(usint idx, Poly &&valueA, Poly &&valueB){
+	auto it = m_element.begin() + idx;
+	if(it==m_element.end()){
+		m_element.push_back(std::move(LWEForm(std::move(valueA),std::move(valueB))));
+	}
+	else{
+		m_element.at(idx).SetA(std::move(valueA));
+		m_element.at(idx).SetB(std::move(valueB));
+	}
+}
+
 RGSWKey::RGSWKey(const std::shared_ptr<LPCryptoParameters<Poly>> params){
 	this->cryptoParams = params;
 }
@@ -73,43 +95,41 @@ const Poly& RGSWPublicKey::GetBPublicElementsAtIndex(usint idx) const{
 	return this->m_elements.at(idx).GetB();
 }
 
-void RGSWPublicKey::SetAPublicElementAtIndex(usint idx, const Poly& value){
-	this->m_elements.at(idx).SetA(value);
+void RGSWPublicKey::SetAPublicElementAtIndex(usint idx, const Poly& value){//use only when element exist at that idx
+	m_elements.at(idx).SetA(value);
 }
 
 void RGSWPublicKey::SetAPublicElementAtIndex(usint idx, Poly &&value){
-	this->m_elements.at(idx).SetA(std::move(value));
-}
-
-void RGSWPublicKey::SetAPublicElement(const std::vector<Poly> &values){
-	for(usint i=0;i<values.size();i++){
-		this->m_elements.at(i).SetA(values.at(i));
-	}
-}
-
-void RGSWPublicKey::SetAPublicElement(std::vector<Poly> &&values){
-	for(usint i=0;i<values.size();i++){
-		this->m_elements.at(i).SetA(std::move(values.at(i)));
-	}
+	m_elements.at(idx).SetA(std::move(value));
 }
 
 void RGSWPublicKey::SetBPublicElementAtIndex(usint idx, const Poly& value){
-	this->m_elements.at(idx).SetB(value);
+	m_elements.at(idx).SetB(value);
 }
 
 void RGSWPublicKey::SetBPublicElementAtIndex(usint idx, Poly &&value){
-	this->m_elements.at(idx).SetB(std::move(value));
+	m_elements.at(idx).SetB(std::move(value));
 }
 
-void RGSWPublicKey::SetBPublicElement(const std::vector<Poly> &values){
-	for(usint i=0;i<values.size();i++){
-		this->m_elements.at(i).SetB(values.at(i));
+void RGSWPublicKey::SetPublicElementAtIndex(usint idx, const Poly &valueA, const Poly &valueB){
+	auto it = m_elements.begin()+idx;
+	if(it==m_elements.end()){
+		m_elements.push_back(std::move(LWEForm(valueA,valueB)));
+	}
+	else{
+		m_elements.at(idx).SetA(valueA);
+		m_elements.at(idx).SetB(valueB);
 	}
 }
 
-void RGSWPublicKey::SetBPublicElement(std::vector<Poly> &&values){
-	for(usint i=0;i<values.size();i++){
-		this->m_elements.at(i).SetB(std::move(values.at(i)));
+void RGSWPublicKey::SetPublicElementAtIndex(usint idx, Poly &&valueA, Poly &&valueB){
+	auto it = m_elements.begin()+idx;
+	if(it==m_elements.end()){
+		m_elements.push_back(std::move(LWEForm(std::move(valueA),std::move(valueB))));
+	}
+	else{
+		m_elements.at(idx).SetA(std::move(valueA));
+		m_elements.at(idx).SetB(std::move(valueB));
 	}
 }
 

@@ -58,6 +58,10 @@ public:
 
 	std::vector<LWEForm>& GetElements();
 
+	void SetElementAtIndex(usint idx, const Poly &valueA, const Poly& valueB);
+
+	void SetElementAtIndex(usint idx, Poly &&valueA, Poly &&valueB);
+
 	void SwitchFormat();
 };
 
@@ -91,17 +95,14 @@ public:
 
 	void SetAPublicElementAtIndex(usint idx, Poly &&value);
 
-	void SetAPublicElement(const std::vector<Poly> &values);
-
-	void SetAPublicElement(std::vector<Poly> &&values);
-
 	void SetBPublicElementAtIndex(usint idx, const Poly& value);
 
 	void SetBPublicElementAtIndex(usint idx, Poly &&value);
 
-	void SetBPublicElement(const std::vector<Poly> &values);
+	void SetPublicElementAtIndex(usint idx, const Poly &valueA, const Poly &valueB);
 
-	void SetBPublicElement(std::vector<Poly> &&values);
+	void SetPublicElementAtIndex(usint idx, Poly &&valueA, Poly &&valueB);
+
 };
 
 class RGSWSecretKey: public RGSWKey {
@@ -109,7 +110,9 @@ private:
 	std::shared_ptr<Poly> m_sk;
 
 public:
-	RGSWSecretKey(const shared_ptr<LPCryptoParametersRLWE<Poly>> params): RGSWKey(params){};
+	RGSWSecretKey(const shared_ptr<LPCryptoParametersRLWE<Poly>> params): RGSWKey(params){
+		m_sk = std::make_shared<Poly>(params->GetElementParams(),COEFFICIENT,true);
+	};
 
 	const Poly& GetSecretKey();
 	void SetSecretKey(const Poly& value);
