@@ -13,7 +13,7 @@ TPDIR:= $(shell find $(PALISADEDR) -type d -name "third-party")
 INCLUDES+= $(INCLUDES) -I $(TPDIR)/include
 LINKDIR:= -L$(PALISADEDR)/bin/lib -L$(PALISADEDR)/third-party/lib
 
-all: demo-ringgsw
+all: build/demo/demo-ringgsw
 	
 build/src/ringgsw.o: src/ringgsw.cpp src/ringgsw.h
 	$(CC) $(CFLAG) $(INCLUDES) -c $< -o $@
@@ -25,7 +25,7 @@ build/src/demo-ringgsw.o: demo/demo-ringgsw.cpp
 	$(CC) $(CFLAG) $(INCLUDES) -c $< -o $@
 	
 build/demo/demo-ringgsw: build/src/demo-ringgsw.o build/src/ringgsw.o build/src/RingGSWOPS.o
-	$(CC) $(CFLAG) -o $@ $< $(LINKDIR) -lPALISADEcore -lPALISADEpke -lntl
+	$(CC) $(CFLAG) -o $@ $^ $(LINKDIR) -lPALISADEcore -lPALISADEpke -lntl
 	
 clean:
 	find build/ -type f -name '*.o' -delete
