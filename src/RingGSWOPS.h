@@ -19,7 +19,7 @@ class RGSWOps{
 	static std::shared_ptr<RGSWCiphertext> Encrypt(const RGSWPublicKey &pk, Poly &m);
 	static Poly Decrypt(const std::shared_ptr<RGSWCiphertext> ciphertext,const std::shared_ptr<RGSWSecretKey> sk);
 	static RGSWCiphertext Add(const RGSWCiphertext& a,const RGSWCiphertext& b);
-	static RGSWCiphertext ScalarMultiply(const BigInteger &a,const RGSWCiphertext& ciphertext);
+	static std::shared_ptr<RGSWCiphertext> ScalarMultiply(const BigInteger &a,const std::shared_ptr<RGSWCiphertext> ciphertext);
 	static RGSWCiphertext RingMultiply(const Poly& a, const RGSWCiphertext& ciphertext);
 	static RGSWCiphertext Multiply(const RGSWCiphertext& a,const RGSWCiphertext& b);
 };

@@ -60,7 +60,7 @@ std::shared_ptr<RGSWCiphertext> RGSWOps::Encrypt(const RGSWPublicKey &pk, Poly &
 
 	const shared_ptr<LPCryptoParametersBGV<Poly>> cryptoParamsBGV = std::dynamic_pointer_cast<LPCryptoParametersBGV<Poly>>(pk.GetCryptoParameters());
 
-	shared_ptr<RGSWCiphertext> ciphertext(new RGSWCiphertext());
+	shared_ptr<RGSWCiphertext> ciphertext(new RGSWCiphertext(cryptoParamsBGV));
 
 	const shared_ptr<ILParams> elementParams = cryptoParamsBGV->GetElementParams();
 
@@ -115,27 +115,44 @@ Poly RGSWOps::Decrypt(const std::shared_ptr<RGSWCiphertext> ciphertext,const std
 	for(usint i=1;i<ciphertext->GetElements().size();i++){
 		b = c[i].GetB()-s*c[i].GetA();
 		b.SwitchFormat();
-		std::cout<< b.Mod(p)<<'\n';
+		//std::cout<< b.Mod(p)<<'\n';
 	}
 
 
 	return result;
 }
 RGSWCiphertext RGSWOps::Add(const RGSWCiphertext& a, const RGSWCiphertext& b) {
-	RGSWCiphertext result;
+	RGSWCiphertext result(a.GetCryptoParameters());
 	return result;
 }
 
-RGSWCiphertext RGSWOps::ScalarMultiply(const BigInteger &a,const RGSWCiphertext& ciphertext) {
-	RGSWCiphertext result;
+std::shared_ptr<RGSWCiphertext> RGSWOps::ScalarMultiply(const BigInteger &a,const std::shared_ptr<RGSWCiphertext> ciphertext) {
+	const auto cryptoParams = ciphertext->GetCryptoParameters();
+	auto result = make_shared<RGSWCiphertext>(cryptoParams);
+	auto logQ = ciphertext->GetElements().size();
+	auto r = cryptoParams->GetRelinWindow();
+	auto base = 1<<r;
+
+	for(usint i=0;i<logQ;i++){
+		BigInteger scalarValue = a<<(i*r);
+		usint digit = scalarValue.GetDigitAtIndexForBase(1,base);
+		Poly a = BigInteger(digit)*ciphertext->GetElements().at(0).GetA();
+		Poly b = BigInteger(digit)*ciphertext->GetElements().at(0).GetB();
+		for(usint j=1;j<logQ;j++){
+			digit = scalarValue.GetDigitAtIndexForBase(j+1,base);
+			a+= BigInteger(digit)*ciphertext->GetElements().at(j).GetA();
+			b+= BigInteger(digit)*ciphertext->GetElements().at(j).GetB();
+		}
+		result->SetElementAtIndex(i,std::move(a),std::move(b));
+	}
 	return result;
 }
 RGSWCiphertext RGSWOps::RingMultiply(const Poly& a, const RGSWCiphertext& ciphertext) {
-	RGSWCiphertext result;
+	RGSWCiphertext result(ciphertext.GetCryptoParameters());
 	return result;
 }
 RGSWCiphertext RGSWOps::Multiply(const RGSWCiphertext& a, const RGSWCiphertext& b) {
-	RGSWCiphertext result;
+	RGSWCiphertext result(a.GetCryptoParameters());
 	return result;
 }
 

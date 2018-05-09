@@ -43,6 +43,18 @@ void LWEForm::SwitchFormat(){
 	this->b.SwitchFormat();
 }
 
+RGSWKey::RGSWKey(const std::shared_ptr<LPCryptoParameters<Poly>> params){
+	this->cryptoParams = params;
+}
+
+const std::shared_ptr<LPCryptoParameters<Poly>> RGSWKey::GetCryptoParameters() const{
+	return this->cryptoParams;
+}
+
+RGSWCiphertext::RGSWCiphertext(const shared_ptr<LPCryptoParameters<Poly>> params): RGSWKey(params){
+
+}
+
 std::vector<LWEForm>& RGSWCiphertext::GetElements(){
 	return this->m_element;
 }
@@ -73,14 +85,6 @@ void RGSWCiphertext::SetElementAtIndex(usint idx, Poly &&valueA, Poly &&valueB){
 		m_element.at(idx).SetA(std::move(valueA));
 		m_element.at(idx).SetB(std::move(valueB));
 	}
-}
-
-RGSWKey::RGSWKey(const std::shared_ptr<LPCryptoParameters<Poly>> params){
-	this->cryptoParams = params;
-}
-
-const std::shared_ptr<LPCryptoParameters<Poly>> RGSWKey::GetCryptoParameters() const{
-	return this->cryptoParams;
 }
 
 const std::vector<LWEForm>& RGSWPublicKey::GetPublicElements() const{

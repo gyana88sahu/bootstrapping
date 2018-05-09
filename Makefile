@@ -2,7 +2,7 @@
 CC:= g++ -std=c++11 -fPIC
 
 #defination for compiler flag
-CFLAG:= -g -Wall -Werror -O3 -fopenmp
+CFLAG:= -g -Wall -Werror -O0 -fopenmp
 
 SRCFLDR:= src
 DEMOFLDR:= demo

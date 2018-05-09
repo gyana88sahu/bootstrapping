@@ -13,12 +13,12 @@
 namespace lbcrypto {
 //forward declarations
 
-class LWEForm;
-class RGSWCiphertext;
+/*class LWEForm;
 class RGSWPublicKey;
 class RGSWSecretKey;
-class RGSWKey;
 class RGSWKeyPair;
+class RGSWCiphertext;*/
+class RGSWKey;
 
 class LWEForm {
 
@@ -48,23 +48,6 @@ public:
 
 };
 
-//ciphertext of ring gsw form
-class RGSWCiphertext {
-
-private:
-	std::vector<LWEForm> m_element;
-
-public:
-
-	std::vector<LWEForm>& GetElements();
-
-	void SetElementAtIndex(usint idx, const Poly &valueA, const Poly& valueB);
-
-	void SetElementAtIndex(usint idx, Poly &&valueA, Poly &&valueB);
-
-	void SwitchFormat();
-};
-
 class RGSWKey {
 
 private:
@@ -75,6 +58,25 @@ public:
 	RGSWKey(const std::shared_ptr<LPCryptoParameters<Poly>> params);
 
 	const std::shared_ptr<LPCryptoParameters<Poly>> GetCryptoParameters() const;
+};
+
+//ciphertext of ring gsw form
+class RGSWCiphertext: public RGSWKey {
+
+private:
+	std::vector<LWEForm> m_element;
+
+public:
+
+	RGSWCiphertext(const shared_ptr<LPCryptoParameters<Poly>> params);
+
+	std::vector<LWEForm>& GetElements();
+
+	void SetElementAtIndex(usint idx, const Poly &valueA, const Poly& valueB);
+
+	void SetElementAtIndex(usint idx, Poly &&valueA, Poly &&valueB);
+
+	void SwitchFormat();
 };
 
 class RGSWPublicKey: public RGSWKey {
