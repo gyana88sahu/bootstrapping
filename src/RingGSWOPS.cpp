@@ -115,7 +115,7 @@ Poly RGSWOps::Decrypt(const std::shared_ptr<RGSWCiphertext> ciphertext,const std
 	for(usint i=1;i<ciphertext->GetElements().size();i++){
 		b = c[i].GetB()-s*c[i].GetA();
 		b.SwitchFormat();
-		//std::cout<< b.Mod(p)<<'\n';
+		std::cout<< b<<'\n';
 	}
 
 
@@ -153,6 +153,12 @@ RGSWCiphertext RGSWOps::RingMultiply(const Poly& a, const RGSWCiphertext& cipher
 }
 RGSWCiphertext RGSWOps::Multiply(const RGSWCiphertext& a, const RGSWCiphertext& b) {
 	RGSWCiphertext result(a.GetCryptoParameters());
+	//decompose b
+	/*for(int i=0;i<b.GetElements().size();i++){
+		const Poly& a = b.GetElements().GetA();
+		const Poly& b = b.GetElements().GetB();
+
+	}*/
 	return result;
 }
 

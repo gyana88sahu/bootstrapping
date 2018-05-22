@@ -13,11 +13,6 @@
 namespace lbcrypto {
 //forward declarations
 
-/*class LWEForm;
-class RGSWPublicKey;
-class RGSWSecretKey;
-class RGSWKeyPair;
-class RGSWCiphertext;*/
 class RGSWKey;
 
 class LWEForm {

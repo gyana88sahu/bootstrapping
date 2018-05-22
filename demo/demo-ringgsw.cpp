@@ -33,15 +33,15 @@ int main(int argc, char *argv[]) {
 	auto cipher = RGSWOps::Encrypt(*kp.publicKey, message);
 
 
-	auto decryptResult = RGSWOps::Decrypt(cipher, kp.secretKey);
+/*	auto decryptResult = RGSWOps::Decrypt(cipher, kp.secretKey);
 
-	std::cout << decryptResult << '\n';
+	std::cout << decryptResult << '\n';*/
 
 	BigInteger scalar(323);
 
 	auto cipherScalarMultiply = RGSWOps::ScalarMultiply(scalar,cipher);
 
-	decryptResult = RGSWOps::Decrypt(cipherScalarMultiply,kp.secretKey);
+	auto decryptResult = RGSWOps::Decrypt(cipherScalarMultiply,kp.secretKey);
 
 	std::cout << decryptResult << '\n';
 

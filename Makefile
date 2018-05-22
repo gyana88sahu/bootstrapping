@@ -13,7 +13,7 @@ TPDIR:= $(shell find $(PALISADEDR) -type d -name "third-party")
 INCLUDES+= $(INCLUDES) -I $(TPDIR)/include
 LINKDIR:= -L$(PALISADEDR)/bin/lib -L$(PALISADEDR)/third-party/lib
 
-all: build/demo/demo-ringgsw
+all: build/demo/demo-ringgsw build/demo/demo-ILWE 
 	
 build/src/ringgsw.o: src/ringgsw.cpp src/ringgsw.h
 	$(CC) $(CFLAG) $(INCLUDES) -c $< -o $@
@@ -26,6 +26,18 @@ build/src/demo-ringgsw.o: demo/demo-ringgsw.cpp
 	
 build/demo/demo-ringgsw: build/src/demo-ringgsw.o build/src/ringgsw.o build/src/RingGSWOPS.o
 	$(CC) $(CFLAG) -o $@ $^ $(LINKDIR) -lPALISADEcore -lPALISADEpke -lntl
+	
+build/demo/demo-ILWE:build/demo/demo-ILWE.o build/src/integerlwedefs.o build/src/ILWEOps.o
+	$(CC) $(CFLAG) -o $@ $^ $(LINKDIR) -lPALISADEcore -lPALISADEpke -lntl	 	
+
+build/demo/demo-ILWE.o: demo/demo-ILWE.cpp
+	$(CC) $(CFLAG) $(INCLUDES) -c $< -o $@
+	
+build/src/integerlwedefs.o: src/integerlwedefs.cpp src/integerlwedefs.h
+	$(CC) $(CFLAG) $(INCLUDES) -c $< -o $@
+	
+build/src/ILWEOps.o: src/ILWEOps.cpp src/ILWEOps.h
+	$(CC) $(CFLAG) $(INCLUDES) -c $< -o $@	
 	
 clean:
 	find build/ -type f -name '*.o' -delete
