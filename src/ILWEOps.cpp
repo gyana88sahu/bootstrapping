@@ -21,14 +21,14 @@ ILWEKeyPair ILWEOps::KeyGen(const shared_ptr<ILWEParams> &param) {
 	auto modulus = param->GetModulus();
 	auto s = param->GetDiscreteGaussianGenerator().GenerateVector(dim,modulus);
 	auto a = param->GetDiscreteUniformGenerator().GenerateVector(dim);
-	auto e = param->GetDiscreteGaussianGenerator().GenerateVector(dim,modulus);
+	auto e = param->GetDiscreteGaussianGenerator().GenerateInteger(modulus);
 
 	kp.secretkey->SetSKElement(s);
 	kp.publickey->SetA(a);
 
 	NativeInteger b(0);
-	auto val = a*s+e;
-	b = Sum(val);
+	auto val = a*s;
+	b = Sum(val)+e;
 	kp.publickey->SetB(b);
 
 	return kp;
@@ -65,6 +65,7 @@ usint ILWEOps::Decrypt(const shared_ptr<ILWECiphertext> cipher,const ILWESecretK
 	auto val = Sum(a*s);
 	val = b.ModSub(val,q); //val = b-a*s
 	val = (val*t).DivideAndRound(q);
+	val = val.Mod(t);
 
 	return val.ConvertToInt();
 }
