@@ -81,6 +81,11 @@ ILWECiphertext::ILWECiphertext(const shared_ptr<ILWEParams> params):ILWEKey(para
 	m_element = make_shared<ILWE>(params->GetDimension(),params->GetModulus());
 }
 
+ILWECiphertext::ILWECiphertext(const ILWECiphertext &rhs):ILWEKey(rhs.GetLWEParams()){
+	auto params = rhs.GetLWEParams();
+	m_element = make_shared<ILWE>(params->GetDimension(),params->GetModulus());
+}
+
 const NativeVector& ILWECiphertext::GetA() const{
 	return m_element->GetA();
 }

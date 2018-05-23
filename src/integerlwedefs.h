@@ -63,6 +63,8 @@ private:
 public:
 	ILWECiphertext(const shared_ptr<ILWEParams> params);
 
+	ILWECiphertext(const ILWECiphertext &rhs);
+
 	const NativeVector& GetA() const;
 
 	void SetA(const NativeVector& a);

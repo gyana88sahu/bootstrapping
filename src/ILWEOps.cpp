@@ -74,5 +74,31 @@ void ILWEOps::KeySwitchGen(const ILWESecretKey &sk) {
 
 }
 
+shared_ptr<ILWECiphertext> ILWEOps::EvalNand(const shared_ptr<ILWECiphertext> c0, const shared_ptr<ILWECiphertext> c1){
+	auto result = make_shared<ILWECiphertext>(*c0);
+
+	auto modulus(c0->GetLWEParams()->GetModulus());
+
+	auto &a0 = c0->GetA();
+	auto &a1 = c1->GetA();
+
+	auto a(a0+a1);
+	//Negate the values, to be later added to binvect
+	for(usint i=0;i<a.GetLength();i++){
+		a[i] = modulus.ModSub(a[i],modulus);
+	}
+
+	result->SetA(a);
+
+	auto b0 = c0->GetB();
+	auto b1 = c1->GetB();
+
+	auto b = (NativeInteger(5)*modulus).DivideAndRound(NativeInteger(8));
+	b = b.ModSub(b0+b1,modulus);
+	result->SetB(b);
+
+	return result;
+}
+
 }
 #endif /* SRC_ILWEOPS_H_ */

@@ -17,6 +17,8 @@ public:
 
 	static void KeySwitchGen(const ILWESecretKey &sk);
 
+	static shared_ptr<ILWECiphertext> EvalNand(const shared_ptr<ILWECiphertext> c1, const shared_ptr<ILWECiphertext> c2);
+
 };
 
 }
