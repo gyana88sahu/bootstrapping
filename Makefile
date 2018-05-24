@@ -39,11 +39,15 @@ build/src/integerlwedefs.o: src/integerlwedefs.cpp src/integerlwedefs.h
 build/src/ILWEOps.o: src/ILWEOps.cpp src/ILWEOps.h
 	$(CC) $(CFLAG) $(INCLUDES) -c $< -o $@
 	
-build/demo/demo-BGV: build/demo/demo-BGV.o build/src/integerlwedefs.o build/src/ILWEOps.o
+build/demo/demo-BGV: build/demo/demo-BGV.o build/src/integerlwedefs.o build/src/ILWEOps.o build/src/BGV.o
 	$(CC) $(CFLAG) -o $@ $^ $(LINKDIR) -lPALISADEcore -lPALISADEpke -lntl
 	
 build/demo/demo-BGV.o: demo/demo-BGV.cpp
 	$(CC) $(CFLAG) $(INCLUDES) -c $< -o $@
+	
+build/src/BGV.o: src/BGV.cpp src/BGV.h
+	$(CC) $(CFLAG) $(INCLUDES) -c $< -o $@
+	
 	
 clean:
 	find build/ -type f -name '*.o' -delete
