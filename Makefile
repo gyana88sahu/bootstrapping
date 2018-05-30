@@ -13,7 +13,7 @@ TPDIR:= $(shell find $(PALISADEDR) -type d -name "third-party")
 INCLUDES+= $(INCLUDES) -I $(TPDIR)/include
 LINKDIR:= -L$(PALISADEDR)/bin/lib -L$(PALISADEDR)/third-party/lib
 
-all: build/demo/demo-ringgsw build/demo/demo-ILWE build/demo/demo-BGV
+all: build/demo/demo-ringgsw build/demo/demo-ILWE build/demo/demo-BGV build/demo/demo-bootstrap-rgsw
 	
 build/src/ringgsw.o: src/ringgsw.cpp src/ringgsw.h
 	$(CC) $(CFLAG) $(INCLUDES) -c $< -o $@
@@ -42,7 +42,13 @@ build/src/ILWEOps.o: src/ILWEOps.cpp src/ILWEOps.h
 build/demo/demo-BGV: build/demo/demo-BGV.o build/src/integerlwedefs.o build/src/ILWEOps.o build/src/BGV.o
 	$(CC) $(CFLAG) -o $@ $^ $(LINKDIR) -lPALISADEcore -lPALISADEpke -lntl
 	
+build/demo/demo-bootstrap-rgsw: build/demo/demo-bootstrap-rgsw.o build/src/integerlwedefs.o build/src/ILWEOps.o build/src/BGV.o build/src/ringgsw.o build/src/RingGSWOPS.o
+	$(CC) $(CFLAG) -o $@ $^ $(LINKDIR) -lPALISADEcore -lPALISADEpke -lntl
+	
 build/demo/demo-BGV.o: demo/demo-BGV.cpp
+	$(CC) $(CFLAG) $(INCLUDES) -c $< -o $@
+	
+build/demo/demo-bootstrap-rgsw.o: demo/demo-bootstrap-rgsw.cpp
 	$(CC) $(CFLAG) $(INCLUDES) -c $< -o $@
 	
 build/src/BGV.o: src/BGV.cpp src/BGV.h
