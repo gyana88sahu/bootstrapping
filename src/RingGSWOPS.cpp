@@ -55,6 +55,8 @@ std::shared_ptr<RGSWCiphertext> RGSWOps::Encrypt(const RGSWPublicKey &pk, Poly &
 
 	const shared_ptr<ILParams> elementParams = cryptoParamsBGV->GetElementParams();
 
+	const auto p = cryptoParamsBGV->GetPlaintextModulus();
+
 	const Poly::TugType tug;
 
 	m.SwitchFormat();
@@ -74,9 +76,13 @@ std::shared_ptr<RGSWCiphertext> RGSWOps::Encrypt(const RGSWPublicKey &pk, Poly &
 
 		Poly r(tug, elementParams, Format::EVALUATION); //r is the random noise
 
-		Poly bPoly(b * r + m * (powersOfBaseInit << (base * i)));
+		Poly e0(tug, elementParams, Format::EVALUATION);
 
-		Poly aPoly(a * r);
+		Poly e1(tug, elementParams, Format::EVALUATION);
+
+		Poly bPoly(b * r + p*e1 + m * (powersOfBaseInit << (base * i)));
+
+		Poly aPoly(a * r + p*e0);
 
 		ciphertext->SetElementAtIndex(i, std::move(bPoly), std::move(aPoly));
 	}
@@ -87,9 +93,13 @@ std::shared_ptr<RGSWCiphertext> RGSWOps::Encrypt(const RGSWPublicKey &pk, Poly &
 
 		Poly r(tug, elementParams, Format::EVALUATION); //r is the random noise
 
-		Poly bPoly(b * r);
+		Poly e0(tug, elementParams, Format::EVALUATION);
 
-		Poly aPoly(a * r + m * (powersOfBaseInit << (base * i)));
+		Poly e1(tug, elementParams, Format::EVALUATION);
+
+		Poly bPoly(b * r + p*e1);
+
+		Poly aPoly(a * r + p*e0 + m * (powersOfBaseInit << (base * i)));
 
 		ciphertext->SetElementAtIndex(i + l, std::move(bPoly), std::move(aPoly));
 	}
