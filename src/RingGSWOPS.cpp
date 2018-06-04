@@ -80,9 +80,9 @@ std::shared_ptr<RGSWCiphertext> RGSWOps::Encrypt(const RGSWPublicKey &pk, Poly &
 
 		Poly e1(tug, elementParams, Format::EVALUATION);
 
-		Poly bPoly(b * r + p*e1 + m * (powersOfBaseInit << (base * i)));
+		Poly bPoly(b * r + p * e1 + m * (powersOfBaseInit << (base * i)));
 
-		Poly aPoly(a * r + p*e0);
+		Poly aPoly(a * r + p * e0);
 
 		ciphertext->SetElementAtIndex(i, std::move(bPoly), std::move(aPoly));
 	}
@@ -97,9 +97,9 @@ std::shared_ptr<RGSWCiphertext> RGSWOps::Encrypt(const RGSWPublicKey &pk, Poly &
 
 		Poly e1(tug, elementParams, Format::EVALUATION);
 
-		Poly bPoly(b * r + p*e1);
+		Poly bPoly(b * r + p * e1);
 
-		Poly aPoly(a * r + p*e0 + m * (powersOfBaseInit << (base * i)));
+		Poly aPoly(a * r + p * e0 + m * (powersOfBaseInit << (base * i)));
 
 		ciphertext->SetElementAtIndex(i + l, std::move(bPoly), std::move(aPoly));
 	}
