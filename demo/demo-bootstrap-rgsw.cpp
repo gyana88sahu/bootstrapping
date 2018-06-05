@@ -1,5 +1,6 @@
 #include "palisade.h"
 #include "../src/ILWEOps.h"
+#include "../src/ISLWE.h"
 #include "../src/integerlwedefs.h"
 #include "cryptocontext.h"
 #include "../src/ringgsw.h"
@@ -24,7 +25,8 @@ int main(int argc, char *argv[]){
 
 	//runBootstrappingExperiment(1,0);
 	//runConvolutionTest();
-	runConvolutionTestofTestingVector();
+	//runConvolutionTestofTestingVector();
+	runSingleCiphertextBootstrappingExperiment(1);
 	return 0;
 
 }
@@ -134,8 +136,8 @@ const shared_ptr<LPCryptoParameters<Poly>> GetRGSWCryptoParams(){
 	usint m = 512;
 	usint p = 5;
 	BigInteger modulusP(p);
-	BigInteger modulusQ("1073750017");
-	BigInteger rootOfUnity("1063435359");
+	BigInteger modulusQ("1125899906844161");
+	BigInteger rootOfUnity("1123897446934361");
 
 	float stdDev = 4;
 	float assm = 9;//assuranceMeasure
@@ -169,6 +171,7 @@ void runSingleCiphertextBootstrappingExperiment(usint m){
 	NativeInteger q(512);
 	NativeInteger p(5);
 	usint dim = 5;
+	m = m%p.ConvertToInt();
 
 	auto dgg = make_shared<NativePoly::DggType>(2.0);
 	auto dug = make_shared<NativePoly::DugType>();
@@ -179,7 +182,39 @@ void runSingleCiphertextBootstrappingExperiment(usint m){
 	params->SetDiscreteUniformGenerator(dug);
 	params->SetDiscreteGaussianGenerator(dgg);
 
-	auto kp = ILWEOps::KeyGen(params);
+	auto kp = ISLWEOps::KeyGen(params);
+
+	auto cipher = ISLWEOps::Encrypt(*kp.publickey, m);
+	//#############Integer-LWE ends here##############
+
+	auto cryptoParamRGSW = GetRGSWCryptoParams();
+
+	// Initialize the public key containers.
+	RGSWKeyPair kpRGSW = RGSWOps::KeyGen(cryptoParamRGSW);
+
+	//usint message = ISLWEOps::Decrypt(cipher, *kp.secretkey);
+	auto bootKey = ISLWEOps::BootstrappingKeyGen(*kp.secretkey,4,*kpRGSW.publicKey);
+
+
+	//Initialize ciphertext to b
+	auto a = cipher->GetA();
+	auto b = cipher->GetB();
+
+	auto bEncoding = GetEncoding(cryptoParamRGSW,b,q);
+	auto bootCipher = RGSWOps::Encrypt(*kpRGSW.publicKey, bEncoding);
+
+	usint l = std::ceil((double)q.GetMSB()/(double)4);
+	for (usint i = 0; i < dim; i++) {
+		auto ai = a[i];
+		ai = q.ModSub(ai, q); //ai = -a[i]
+		for (usint j = 0; j < l; j++) {
+			auto aij = NativeInteger(ai.GetDigitAtIndexForBase(j+1,1<<4));
+			bootCipher = RGSWOps::Multiply(bootCipher,bootKey[aij.ConvertToInt()][i][j]);
+		}
+	}
+
+	auto finalValue = RGSWOps::Decrypt(bootCipher,kpRGSW.secretKey);
+	std::cout << finalValue<<endl;
 
 }
 

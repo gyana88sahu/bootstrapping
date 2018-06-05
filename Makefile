@@ -15,6 +15,25 @@ LINKDIR:= -L$(PALISADEDR)/bin/lib -L$(PALISADEDR)/third-party/lib
 
 all: build/demo/demo-ringgsw build/demo/demo-ILWE build/demo/demo-BGV build/demo/demo-bootstrap-rgsw build/demo/demo-ISLWE
 	
+#demo builds
+build/demo/demo-ringgsw: build/src/demo-ringgsw.o build/src/ringgsw.o build/src/RingGSWOPS.o
+	$(CC) $(CFLAG) -o $@ $^ $(LINKDIR) -lPALISADEcore -lPALISADEpke -lntl
+	
+build/demo/demo-ILWE:build/demo/demo-ILWE.o build/src/integerlwedefs.o build/src/ILWEOps.o
+	$(CC) $(CFLAG) -o $@ $^ $(LINKDIR) -lPALISADEcore -lPALISADEpke -lntl
+	
+build/demo/demo-ISLWE:build/demo/demo-ISLWE.o build/src/integerlwedefs.o build/src/ISLWE.o build/src/RingGSWOPS.o build/src/ringgsw.o
+	$(CC) $(CFLAG) -o $@ $^ $(LINKDIR) -lPALISADEcore -lPALISADEpke -lntl
+
+build/demo/demo-BGV: build/demo/demo-BGV.o build/src/integerlwedefs.o build/src/ILWEOps.o build/src/BGV.o
+	$(CC) $(CFLAG) -o $@ $^ $(LINKDIR) -lPALISADEcore -lPALISADEpke -lntl
+	
+build/demo/demo-bootstrap-rgsw: build/demo/demo-bootstrap-rgsw.o build/src/integerlwedefs.o build/src/ILWEOps.o \
+build/src/BGV.o build/src/ringgsw.o build/src/RingGSWOPS.o build/src/ISLWE.o
+	$(CC) $(CFLAG) -o $@ $^ $(LINKDIR) -lPALISADEcore -lPALISADEpke -lntl	
+	
+#Object file builds######	
+	
 build/src/ringgsw.o: src/ringgsw.cpp src/ringgsw.h
 	$(CC) $(CFLAG) $(INCLUDES) -c $< -o $@
 	
@@ -22,22 +41,13 @@ build/src/RingGSWOPS.o: src/RingGSWOPS.cpp src/RingGSWOPS.h
 	$(CC) $(CFLAG) $(INCLUDES) -c $< -o $@
 	
 build/src/demo-ringgsw.o: demo/demo-ringgsw.cpp
-	$(CC) $(CFLAG) $(INCLUDES) -c $< -o $@
-	
-build/demo/demo-ringgsw: build/src/demo-ringgsw.o build/src/ringgsw.o build/src/RingGSWOPS.o
-	$(CC) $(CFLAG) -o $@ $^ $(LINKDIR) -lPALISADEcore -lPALISADEpke -lntl
-	
-build/demo/demo-ILWE:build/demo/demo-ILWE.o build/src/integerlwedefs.o build/src/ILWEOps.o
-	$(CC) $(CFLAG) -o $@ $^ $(LINKDIR) -lPALISADEcore -lPALISADEpke -lntl
-	
-build/demo/demo-ISLWE:build/demo/demo-ISLWE.o build/src/integerlwedefs.o build/src/ISLWE.o
-	$(CC) $(CFLAG) -o $@ $^ $(LINKDIR) -lPALISADEcore -lPALISADEpke -lntl	 	
+	$(CC) $(CFLAG) $(INCLUDES) -c $< -o $@	 	
 
 build/demo/demo-ILWE.o: demo/demo-ILWE.cpp
 	$(CC) $(CFLAG) $(INCLUDES) -c $< -o $@
 	
 build/demo/demo-ISLWE.o: demo/demo-ISLWE.cpp
-	$(CC) $(CFLAG) $(INCLUDES) -c $< -o $@	
+	$(CC) $(CFLAG) $(INCLUDES) -I ./src -c $< -o $@	
 	
 build/src/integerlwedefs.o: src/integerlwedefs.cpp src/integerlwedefs.h
 	$(CC) $(CFLAG) $(INCLUDES) -c $< -o $@
@@ -46,13 +56,9 @@ build/src/ILWEOps.o: src/ILWEOps.cpp src/ILWEOps.h
 	$(CC) $(CFLAG) $(INCLUDES) -c $< -o $@
 	
 build/src/ISLWE.o: src/ISLWE.cpp src/ISLWE.h
-	$(CC) $(CFLAG) $(INCLUDES) -c $< -o $@
+	$(CC) $(CFLAG) $(INCLUDES) -I ./src -c $< -o $@
 	
-build/demo/demo-BGV: build/demo/demo-BGV.o build/src/integerlwedefs.o build/src/ILWEOps.o build/src/BGV.o
-	$(CC) $(CFLAG) -o $@ $^ $(LINKDIR) -lPALISADEcore -lPALISADEpke -lntl
-	
-build/demo/demo-bootstrap-rgsw: build/demo/demo-bootstrap-rgsw.o build/src/integerlwedefs.o build/src/ILWEOps.o build/src/BGV.o build/src/ringgsw.o build/src/RingGSWOPS.o
-	$(CC) $(CFLAG) -o $@ $^ $(LINKDIR) -lPALISADEcore -lPALISADEpke -lntl
+
 	
 build/demo/demo-BGV.o: demo/demo-BGV.cpp
 	$(CC) $(CFLAG) $(INCLUDES) -c $< -o $@
