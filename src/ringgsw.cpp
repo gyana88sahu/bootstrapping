@@ -5,76 +5,92 @@
 
 namespace lbcrypto {
 
-LWEForm::LWEForm(const Poly& a, const Poly &b){
+template <class Element>
+LWEForm<Element>::LWEForm(const Element& a, const Element &b){
 	this->a = a;
 	this->b = b;
 }
 
-LWEForm::LWEForm(Poly &&a, Poly &&b):a(std::move(a)),b(std::move(b)){
+template <class Element>
+LWEForm<Element>::LWEForm(Element &&a, Element &&b):a(std::move(a)),b(std::move(b)){
 
 }
 
-LWEForm::LWEForm(const shared_ptr<LPCryptoParameters<Poly>> params) {
-	const auto paramsBGV = std::dynamic_pointer_cast<LPCryptoParametersBGV<Poly>>(params);
-	a = Poly(paramsBGV->GetElementParams(), EVALUATION, true);
-	b = Poly(paramsBGV->GetElementParams(), EVALUATION, true);
+template <class Element>
+LWEForm<Element>::LWEForm(const shared_ptr<LPCryptoParameters<Element>> params) {
+	const auto paramsBGV = std::dynamic_pointer_cast<LPCryptoParametersBGV<Element>>(params);
+	a = Element(paramsBGV->GetElementParams(), EVALUATION, true);
+	b = Element(paramsBGV->GetElementParams(), EVALUATION, true);
 }
 
-const Poly& LWEForm::GetA() const{
+template <class Element>
+const Element& LWEForm<Element>::GetA() const{
 	return this->a;
 }
 
-void LWEForm::SetA(const Poly& a){
+template <class Element>
+void LWEForm<Element>::SetA(const Element& a){
 	this->a = a;
 }
 
-void LWEForm::SetA(Poly &&a){
+template <class Element>
+void LWEForm<Element>::SetA(Element &&a){
 	this->a = std::move(a);
 }
 
-const Poly& LWEForm::GetB() const{
+template <class Element>
+const Element& LWEForm<Element>::GetB() const{
 	return this->b;
 }
 
-void LWEForm::SetB(const Poly& b){
+template <class Element>
+void LWEForm<Element>::SetB(const Element& b){
 	this->b = b;
 }
 
-void LWEForm::SetB(Poly &&b){
+template <class Element>
+void LWEForm<Element>::SetB(Element &&b){
 	this->b = std::move(b);
 }
 
-void LWEForm::SwitchFormat(){
+template <class Element>
+void LWEForm<Element>::SwitchFormat(){
 	this->a.SwitchFormat();
 	this->b.SwitchFormat();
 }
 
-RGSWKey::RGSWKey(const std::shared_ptr<LPCryptoParameters<Poly>> params){
+template <class Element>
+RGSWKey<Element>::RGSWKey(const std::shared_ptr<LPCryptoParameters<Element>> params){
 	this->cryptoParams = params;
 }
 
-const std::shared_ptr<LPCryptoParameters<Poly>> RGSWKey::GetCryptoParameters() const{
+template <class Element>
+const std::shared_ptr<LPCryptoParameters<Element>> RGSWKey<Element>::GetCryptoParameters() const{
 	return this->cryptoParams;
 }
 
-RGSWCiphertext::RGSWCiphertext(const shared_ptr<LPCryptoParameters<Poly>> params): RGSWKey(params){
+template <class Element>
+RGSWCiphertext<Element>::RGSWCiphertext(const shared_ptr<LPCryptoParameters<Element>> params): RGSWKey<Element>(params){
 
 }
 
-const std::vector<LWEForm>& RGSWCiphertext::GetElements() const{
+template <class Element>
+const std::vector<LWEForm<Element>>& RGSWCiphertext<Element>::GetElements() const{
 	return this->m_element;
 }
 
-void RGSWCiphertext::SwitchFormat(){
+template <class Element>
+void RGSWCiphertext<Element>::SwitchFormat(){
 	for(usint i=0;i<m_element.size();i++){
 		m_element.at(i).SwitchFormat();
 	}
 }
 
-void RGSWCiphertext::SetElementAtIndex(usint idx, const Poly &valueB, const Poly& valueA){
+template <class Element>
+void RGSWCiphertext<Element>::SetElementAtIndex(usint idx, const Element &valueB, const Element& valueA){
 	auto it = m_element.begin() + idx;
 	if(it==m_element.end()){
-		m_element.push_back(std::move(LWEForm(valueA,valueB)));
+		m_element.push_back(std::move(LWEForm<Element>(valueA,valueB)));
 	}
 	else{
 		m_element.at(idx).SetA(valueA);
@@ -82,10 +98,11 @@ void RGSWCiphertext::SetElementAtIndex(usint idx, const Poly &valueB, const Poly
 	}
 }
 
-void RGSWCiphertext::SetElementAtIndex(usint idx, Poly &&valueB, Poly &&valueA){
+template <class Element>
+void RGSWCiphertext<Element>::SetElementAtIndex(usint idx, Element &&valueB, Element &&valueA){
 	auto it = m_element.begin() + idx;
 	if(it==m_element.end()){
-		m_element.push_back(std::move(LWEForm(std::move(valueA),std::move(valueB))));
+		m_element.push_back(std::move(LWEForm<Element>(std::move(valueA),std::move(valueB))));
 	}
 	else{
 		m_element.at(idx).SetA(std::move(valueA));
@@ -93,42 +110,60 @@ void RGSWCiphertext::SetElementAtIndex(usint idx, Poly &&valueB, Poly &&valueA){
 	}
 }
 
-RGSWPublicKey::RGSWPublicKey(const shared_ptr<LPCryptoParameters<Poly>> params): RGSWKey(params){
-	m_elements = std::make_shared < LWEForm > (params);
+template <class Element>
+usint RGSWCiphertext<Element>::GetSizeInBytes(){
+	usint size = 0;
+	size = m_element.size()*2*sizeof(typename Element::Integer)*m_element[0].GetA().GetRingDimension();
+	return size;
 }
 
-const LWEForm& RGSWPublicKey::GetPublicElements() const {
+template <class Element>
+RGSWPublicKey<Element>::RGSWPublicKey(const shared_ptr<LPCryptoParameters<Element>> params): RGSWKey<Element>(params){
+	m_elements = std::make_shared < LWEForm<Element> > (params);
+}
+
+template <class Element>
+const LWEForm<Element>& RGSWPublicKey<Element>::GetPublicElements() const {
 	return *m_elements;
 }
 
-void RGSWPublicKey::SetPublicElements(const Poly &a, const Poly &b) {
+template <class Element>
+void RGSWPublicKey<Element>::SetPublicElements(const Element &a, const Element &b) {
 	m_elements->SetA(a);
 	m_elements->SetB(b);
 }
 
-void RGSWPublicKey::SetPublicElements(Poly &&a, Poly &&b) {
+template <class Element>
+void RGSWPublicKey<Element>::SetPublicElements(Element &&a, Element &&b) {
 	m_elements->SetA(std::move(a));
 	m_elements->SetB(std::move(b));
 }
 
-RGSWSecretKey::RGSWSecretKey(const shared_ptr<LPCryptoParameters<Poly>> params): RGSWKey(params){
-	const auto paramsBGV = std::dynamic_pointer_cast<LPCryptoParametersBGV<Poly>>(params);
-	m_sk = std::make_shared <Poly> (paramsBGV->GetElementParams(), COEFFICIENT, true);
+template <class Element>
+RGSWSecretKey<Element>::RGSWSecretKey(const shared_ptr<LPCryptoParameters<Element>> params): RGSWKey<Element>(params){
+	const auto paramsBGV = std::dynamic_pointer_cast<LPCryptoParametersBGV<Element>>(params);
+	m_sk = std::make_shared <Element> (paramsBGV->GetElementParams(), COEFFICIENT, true);
 }
 
-const Poly& RGSWSecretKey::GetSecretKey(){
+template <class Element>
+const Element& RGSWSecretKey<Element>::GetSecretKey(){
 	return *this->m_sk;
 }
-void RGSWSecretKey::SetSecretKey(const Poly& value){
+
+template <class Element>
+void RGSWSecretKey<Element>::SetSecretKey(const Element& value){
 	*this->m_sk = value;
 }
-void RGSWSecretKey::SetSecretKey(Poly &&value){
+
+template <class Element>
+void RGSWSecretKey<Element>::SetSecretKey(Element &&value){
 	*this->m_sk = std::move(value);
 }
 
-RGSWKeyPair::RGSWKeyPair(const shared_ptr<LPCryptoParameters<Poly>> params){
-	this->publicKey = std::make_shared<RGSWPublicKey>(params);
-	this->secretKey = std::make_shared<RGSWSecretKey>(params);
+template <class Element>
+RGSWKeyPair<Element>::RGSWKeyPair(const shared_ptr<LPCryptoParameters<Element>> params){
+	this->publicKey = std::make_shared<RGSWPublicKey<Element>>(params);
+	this->secretKey = std::make_shared<RGSWSecretKey<Element>>(params);
 }
 
 }

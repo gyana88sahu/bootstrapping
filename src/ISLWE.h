@@ -16,11 +16,16 @@ public:
 
 	static usint Decrypt(const shared_ptr<ILWECiphertext> cipher, const ILWESecretKey &sk);
 
-	static void KeySwitchGen(const ILWESecretKey &sk);
+	static std::vector<std::vector<shared_ptr<ILWECiphertext>>> KeySwitchGen(const ILWESecretKey &sk,const ILWESecretKey &newSk,usint rKS);
+
+	static shared_ptr<ILWECiphertext> KeySwitch(const shared_ptr<ILWECiphertext> cipher, const std::vector<std::vector<ILWECiphertext>> &hint);
 
 	static shared_ptr<ILWECiphertext> EvalMult(const shared_ptr<ILWECiphertext> c1, const shared_ptr<ILWECiphertext> c2);
 
-	static std::vector<std::vector<std::vector<std::shared_ptr<RGSWCiphertext>>>> BootstrappingKeyGen(const ILWESecretKey &sk,usint rWindow,const RGSWPublicKey &pk);
+	static shared_ptr<ILWECiphertext> ModSwitch(shared_ptr<ILWECiphertext> c, NativeInteger &qDash);
+
+	template <class Element>
+	static std::vector<std::vector<std::vector<std::shared_ptr<RGSWCiphertext<Element>>>>> BootstrappingKeyGen(const ILWESecretKey &sk,usint rWindow,const RGSWPublicKey<Element> &pk);
 };
 
 }

@@ -5,7 +5,8 @@
 
 namespace lbcrypto{
 
-Poly GetEncoding1(const shared_ptr<LPCryptoParameters<Poly>> cryptoParams,usint message, usint q){
+template <class Element>
+Element GetEncoding1(const shared_ptr<LPCryptoParameters<Element>> cryptoParams,usint message, usint q){
 	//message is in Zq
 
 	const auto &elemParams = cryptoParams->GetElementParams();
@@ -14,30 +15,31 @@ Poly GetEncoding1(const shared_ptr<LPCryptoParameters<Poly>> cryptoParams,usint 
 	usint m = elemParams->GetCyclotomicOrder();
 	usint N = elemParams->GetRingDimension(); //ring dimension
 
-	BigVector vec(N, modulus);
+	typename Element::Vector vec(N, modulus);
 
 	usint idx = (m/q)*message; //idx is between 0 to 2N-1
 
 	if(idx>N-1){
 		idx = idx%N;
-		vec[idx] = BigInteger(p-1);
+		vec[idx] = typename Element::Integer(p-1);
 	}
 	else{
-		vec[idx] = BigInteger(1);
+		vec[idx] = typename Element::Integer(1);
 	}
 
-	Poly result(cryptoParams->GetElementParams(),COEFFICIENT,true);
+	Element result(cryptoParams->GetElementParams(),COEFFICIENT,true);
 	result.SetValues(vec, COEFFICIENT);
 
 	return std::move(result);
 }
 
-Poly GetEncoding1(const shared_ptr<LPCryptoParameters<Poly>> cryptoParams,NativeInteger message, NativeInteger q){
+template <class Element>
+Element GetEncoding1(const shared_ptr<LPCryptoParameters<Element>> cryptoParams,typename Element::Integer &message, typename Element::Integer &q){
 	//message is in Zq
-	return GetEncoding1(cryptoParams, message.ConvertToInt(), q.ConvertToInt());
+	return GetEncoding1<Element>(cryptoParams, message.ConvertToInt(), q.ConvertToInt());
 }
 
-NativeInteger Sum1(const NativeVector &vec){
+inline NativeInteger Sum1(const NativeVector &vec){
 	NativeInteger ans(0);
 	for(usint i=0;i<vec.GetLength();i++){
 		ans+= vec[i];
@@ -46,7 +48,7 @@ NativeInteger Sum1(const NativeVector &vec){
 	return ans.Mod(vec.GetModulus());
 }
 
-ILWEKeyPair ISLWEOps::KeyGen(const shared_ptr<ILWEParams> &param) {
+inline ILWEKeyPair ISLWEOps::KeyGen(const shared_ptr<ILWEParams> &param) {
 	ILWEKeyPair kp(param);
 
 	usint dim = param->GetDimension();
@@ -65,14 +67,16 @@ ILWEKeyPair ISLWEOps::KeyGen(const shared_ptr<ILWEParams> &param) {
 
 	NativeInteger b(0);
 
-	b = Sum1(a*s)+ p*e;
+	b = p*e;
+	std::cout << "Noise in ISLWE is "<<b<<'\n';
+	b+= Sum1(a*s);
 	b = b.Mod(a.GetModulus());
 	kp.publickey->SetB(b);
 
 	return kp;
 }
 
-shared_ptr<ILWECiphertext> ISLWEOps::Encrypt(const ILWEPublicKey &pk, usint m) {
+inline shared_ptr<ILWECiphertext> ISLWEOps::Encrypt(const ILWEPublicKey &pk, usint m) {
 
 	auto result = make_shared<ILWECiphertext>(pk.GetLWEParams());
 
@@ -91,7 +95,7 @@ shared_ptr<ILWECiphertext> ISLWEOps::Encrypt(const ILWEPublicKey &pk, usint m) {
 	return result;
 }
 
-usint ISLWEOps::Decrypt(const shared_ptr<ILWECiphertext> cipher,const ILWESecretKey &sk) {
+inline usint ISLWEOps::Decrypt(const shared_ptr<ILWECiphertext> cipher,const ILWESecretKey &sk) {
 	auto a = cipher->GetA();
 	auto b = cipher->GetB();
 	auto s = sk.GetSKElement();
@@ -110,12 +114,100 @@ usint ISLWEOps::Decrypt(const shared_ptr<ILWECiphertext> cipher,const ILWESecret
 	return val.ConvertToInt();
 }
 
-void ISLWEOps::KeySwitchGen(const ILWESecretKey &sk) {
+inline std::vector<std::vector<shared_ptr<ILWECiphertext>>> ISLWEOps::KeySwitchGen(const ILWESecretKey &sk,const ILWESecretKey &newSk,usint rKS) {
 
+	std::vector < std::vector<shared_ptr<ILWECiphertext>> > hint;
+
+	auto islweParams = sk.GetLWEParams();
+	usint lweDim = islweParams->GetDimension();
+	auto q = islweParams->GetModulus();
+	auto p = islweParams->GetPlaintextModulus();
+	usint l = q.GetMSB();
+
+	l = std::ceil((double) l / (double) rKS);
+
+	for (usint i = 0; i < lweDim; i++) {
+		auto si = sk.GetSKElement()[i];
+		hint.push_back(std::vector<shared_ptr<ILWECiphertext>>());
+		for (usint j = 0; j < l; j++) {
+			auto powerSi = si * NativeInteger(1 << (j * rKS));
+			powerSi = powerSi.Mod(q);
+			//Generate ciphertext for powerSi
+			auto a = islweParams->GetDiscreteUniformGenerator().GenerateVector(
+					lweDim);
+			auto e =
+					islweParams->GetDiscreteGaussianGenerator().GenerateInteger(
+							q);
+			//make e positive
+			if (e > (q >> 1)) {
+				e = q.ModSub(e, q);
+			}
+			NativeInteger b(0);
+
+			b = p * e;
+			//std::cout << "Noise in ISLWE is " << b << '\n';
+			b += Sum1(a * newSk.GetSKElement());
+			b += powerSi;
+			b = b.Mod(a.GetModulus());
+
+			auto cipher = make_shared < ILWECiphertext > (islweParams);
+			cipher->SetA(a);
+			cipher->SetB(b);
+
+			hint[i].push_back(cipher);
+
+		}
+	}
+
+
+	return std::move(hint);
 }
 
-std::vector<std::vector<std::vector<std::shared_ptr<RGSWCiphertext>>>> ISLWEOps::BootstrappingKeyGen(const ILWESecretKey &sk,usint rWindow,const RGSWPublicKey &pk){
-	std::vector<std::vector<std::vector<std::shared_ptr<RGSWCiphertext>>>> result;
+inline shared_ptr<ILWECiphertext> ISLWEOps::ModSwitch(shared_ptr<ILWECiphertext> c, NativeInteger &qDash){
+
+	auto islweParams = c->GetLWEParams();
+	usint lweDim = islweParams->GetDimension();
+	auto q = islweParams->GetModulus();
+	auto p = islweParams->GetPlaintextModulus();
+	
+	auto a = c->GetA();
+	auto b = c->GetB();
+
+	NativeVector aDash(lweDim,qDash);
+	NativeInteger bDash;
+
+	for (usint i = 0; i < lweDim; i++) {
+		auto num = a[i];
+		num = num*qDash;
+		num = num/q;
+
+		auto diff = (a[i].Mod(p)).ModSub(num.Mod(p),p);
+		aDash[i] = num + diff;
+	}
+
+	NativeInteger num = b;
+	num = num*qDash;
+	num = num/q;
+	auto diff = (b.Mod(p)).ModSub(num.Mod(p),p);
+	bDash = num + diff;
+
+	auto dgg = make_shared<NativePoly::DggType>(2.0);
+	auto dug = make_shared<NativePoly::DugType>();
+	dug->SetModulus(qDash);
+	shared_ptr<ILWEParams> params = make_shared < ILWEParams > (p, qDash, lweDim);
+
+
+	auto result = make_shared<ILWECiphertext>(params);
+
+	result->SetA(aDash);
+	result->SetB(bDash);
+
+	return result;
+}
+
+template <class Element>
+std::vector<std::vector<std::vector<std::shared_ptr<RGSWCiphertext<Element>>>>> ISLWEOps::BootstrappingKeyGen(const ILWESecretKey &sk,usint rWindow,const RGSWPublicKey<Element> &pk){
+	std::vector<std::vector<std::vector<std::shared_ptr<RGSWCiphertext<Element>>>>> result;
 
 	const auto cryptoParams = pk.GetCryptoParameters();
 
@@ -133,23 +225,30 @@ std::vector<std::vector<std::vector<std::shared_ptr<RGSWCiphertext>>>> ISLWEOps:
 	std::cout<<"l is "<<l<<'\n';
 
 	for (usint i = 0; i < base; i++) {
-		result.push_back(std::vector<std::vector<std::shared_ptr<RGSWCiphertext>>>());
-		std::cout<<"running i= "<<i<<'\n';
+		result.push_back(std::vector<std::vector<std::shared_ptr<RGSWCiphertext<Element>>>>());
 		for (usint j = 0; j < lweDim; j++) {
-			result[i].push_back(std::vector<std::shared_ptr<RGSWCiphertext>>());
-			std::cout<<"running j= "<<j<<'\n';
+			result[i].push_back(std::vector<std::shared_ptr<RGSWCiphertext<Element>>>());
 			for (usint k = 0; k < l; k++) {
-				auto val = (NativeInteger(i)*s[j]).Mod(q);
-				val = (val*NativeInteger(base<<k)).Mod(q);
-				auto encoding = GetEncoding1(cryptoParams,val,q);
-				auto cipher = RGSWOps::Encrypt(pk, encoding);
-				result[i][j].push_back(cipher);
-				std::cout<<"finished k= "<<k<<'\n';
+				result[i][j].push_back(nullptr);
 			}
 		}
 	}
 
-	return result;
+ 	#pragma omp parallel
+	#pragma omp for collapse(3)
+	for (usint i = 0; i < base; i++) {
+		for (usint j = 0; j < lweDim; j++) {
+			for (usint k = 0; k < l; k++) {
+				auto val = (typename Element::Integer(i)*s[j]).Mod(q);
+				val = (val*typename Element::Integer(1<<(k*rWindow))).Mod(q);
+				auto encoding = GetEncoding1<Element>(cryptoParams,val.ConvertToInt(),q.ConvertToInt());
+				auto cipher = RGSWOps<Element>::Encrypt(pk, encoding);
+				result[i][j].at(k) = std::move(cipher);
+			}
+		}
+	}
+
+	return std::move(result);
 }
 
 

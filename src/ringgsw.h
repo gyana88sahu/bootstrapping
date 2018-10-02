@@ -11,105 +11,115 @@
  */
 //Definations of core classes of RingGSW
 namespace lbcrypto {
+
 //forward declarations
 
+template <class Element>
 class RGSWKey;
 
+template <class Element>
 class LWEForm {
 
 private:
-	Poly a;
-	Poly b;
+	Element a;
+	Element b;
 
 public:
 
-	LWEForm(const Poly& a, const Poly &b);
+	LWEForm(const Element& a, const Element &b);
 
-	LWEForm(Poly &&a, Poly &&b);
+	LWEForm(Element &&a, Element &&b);
 
-	LWEForm(const shared_ptr<LPCryptoParameters<Poly>> params);
+	LWEForm(const shared_ptr<LPCryptoParameters<Element>> params);
 
-	const Poly& GetA() const;
+	const Element& GetA() const;
 
-	void SetA(const Poly& a);
+	void SetA(const Element& a);
 
-	void SetA(Poly &&a);
+	void SetA(Element &&a);
 
-	const Poly& GetB() const;
+	const Element& GetB() const;
 
-	void SetB(const Poly& b);
+	void SetB(const Element& b);
 
-	void SetB(Poly &&b);
+	void SetB(Element &&b);
 
 	void SwitchFormat();
 
 };
 
+template <class Element>
 class RGSWKey {
 
 private:
-	std::shared_ptr<LPCryptoParameters<Poly>> cryptoParams;
+	std::shared_ptr<LPCryptoParameters<Element>> cryptoParams;
 
 public:
 
-	RGSWKey(const std::shared_ptr<LPCryptoParameters<Poly>> params);
+	RGSWKey(const std::shared_ptr<LPCryptoParameters<Element>> params);
 
-	const std::shared_ptr<LPCryptoParameters<Poly>> GetCryptoParameters() const;
+	const std::shared_ptr<LPCryptoParameters<Element>> GetCryptoParameters() const;
 };
 
 //ciphertext of ring gsw form
-class RGSWCiphertext: public RGSWKey {
+template <class Element>
+class RGSWCiphertext: public RGSWKey<Element> {
 
 private:
-	std::vector<LWEForm> m_element;
+	std::vector<LWEForm<Element>> m_element;
 
 public:
 
-	RGSWCiphertext(const shared_ptr<LPCryptoParameters<Poly>> params);
+	RGSWCiphertext(const shared_ptr<LPCryptoParameters<Element>> params);
 
-	const std::vector<LWEForm>& GetElements() const;
+	const std::vector<LWEForm<Element>>& GetElements() const;
 
-	void SetElementAtIndex(usint idx, const Poly &valueB, const Poly& valueA);
+	void SetElementAtIndex(usint idx, const Element &valueB, const Element& valueA);
 
-	void SetElementAtIndex(usint idx, Poly &&valueB, Poly &&valueA);
+	void SetElementAtIndex(usint idx, Element &&valueB, Element &&valueA);
 
 	void SwitchFormat();
+
+	usint GetSizeInBytes();
 };
 
-class RGSWPublicKey: public RGSWKey {
+template <class Element>
+class RGSWPublicKey: public RGSWKey<Element> {
 
 private:
-	shared_ptr<LWEForm> m_elements;
+	shared_ptr<LWEForm<Element>> m_elements;
 
 public:
-	RGSWPublicKey(const shared_ptr<LPCryptoParameters<Poly>> params);
+	RGSWPublicKey(const shared_ptr<LPCryptoParameters<Element>> params);
 
-	const LWEForm& GetPublicElements() const;
+	const LWEForm<Element>& GetPublicElements() const;
 
-	void SetPublicElements(const Poly &a,const Poly &b);
+	void SetPublicElements(const Element &a,const Element &b);
 
-	void SetPublicElements(Poly &&a, Poly &&b);
+	void SetPublicElements(Element &&a, Element &&b);
 
 };
 
-class RGSWSecretKey: public RGSWKey {
+template <class Element>
+class RGSWSecretKey: public RGSWKey<Element> {
 private:
-	std::shared_ptr<Poly> m_sk;
+	std::shared_ptr<Element> m_sk;
 
 public:
-	RGSWSecretKey(const shared_ptr<LPCryptoParameters<Poly>> params);
+	RGSWSecretKey(const shared_ptr<LPCryptoParameters<Element>> params);
 
-	const Poly& GetSecretKey();
-	void SetSecretKey(const Poly& value);
-	void SetSecretKey(Poly &&value);
+	const Element& GetSecretKey();
+	void SetSecretKey(const Element& value);
+	void SetSecretKey(Element &&value);
 };
 
+template <class Element>
 class RGSWKeyPair {
 public:
-	std::shared_ptr<RGSWSecretKey> secretKey;
-	std::shared_ptr<RGSWPublicKey> publicKey;
+	std::shared_ptr<RGSWSecretKey<Element>> secretKey;
+	std::shared_ptr<RGSWPublicKey<Element>> publicKey;
 
-	RGSWKeyPair(const shared_ptr<LPCryptoParameters<Poly>> params);
+	RGSWKeyPair(const shared_ptr<LPCryptoParameters<Element>> params);
 };
 
 }

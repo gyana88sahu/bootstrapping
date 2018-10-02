@@ -2,6 +2,7 @@
 #define LBCRYPTO_CRYPTO_RGSWOPS_C
 
 #include "RingGSWOPS.h"
+#include "ringgsw.cpp"
 
 /**
  * @namespace lbcrypto
@@ -9,35 +10,39 @@
  */
 namespace lbcrypto {
 
-RGSWOps::RGSWOps(){
+template <class Element>
+RGSWOps<Element>::RGSWOps(){
 
 }
 
-RGSWKeyPair RGSWOps::KeyGen(const shared_ptr<LPCryptoParameters<Poly>> cryptoParams) {
+template <class Element>
+RGSWKeyPair<Element> RGSWOps<Element>::KeyGen(const shared_ptr<LPCryptoParameters<Element>> cryptoParams) {
 
-	const shared_ptr<LPCryptoParametersBGV<Poly>> cryptoParamsBGV = std::dynamic_pointer_cast<LPCryptoParametersBGV<Poly>>(cryptoParams);
+	const shared_ptr<LPCryptoParametersBGV<Element>> cryptoParamsBGV = std::dynamic_pointer_cast<LPCryptoParametersBGV<Element>>(cryptoParams);
 
-	RGSWKeyPair	kp(cryptoParams);
+	RGSWKeyPair<Element> kp(cryptoParams);
 
-	const shared_ptr<ILParams> elementParams = cryptoParamsBGV->GetElementParams();
+	const shared_ptr<typename Element::Params> elementParams = cryptoParamsBGV->GetElementParams();
 
 	const auto p = cryptoParamsBGV->GetPlaintextModulus();
 
-	const auto &dgg = cryptoParamsBGV->GetDiscreteGaussianGenerator();
+	const typename Element::DggType &dgg = cryptoParamsBGV->GetDiscreteGaussianGenerator();
 
-	DiscreteUniformGenerator dug;
+	typename Element::DugType dug;
 
 	//Generate the secret key
-	Poly s(dgg, elementParams, Format::COEFFICIENT);
+	Element s(dgg, elementParams, Format::COEFFICIENT);
 
 	s.SwitchFormat();
 
+	const typename Element::TugType tug;
+
 	//Generate the uniformly random element "a" of the public key
-	Poly a(dug, elementParams, Format::EVALUATION);
+	Element a(dug, elementParams, Format::EVALUATION);
 
-	Poly e(dgg, elementParams, Format::EVALUATION);
+	Element e(tug, elementParams, Format::EVALUATION);
 
-	Poly b = a*s + p*e;
+	Element b = a*s + p*e;
 
 	kp.publicKey->SetPublicElements(std::move(a),std::move(b));
 
@@ -47,17 +52,18 @@ RGSWKeyPair RGSWOps::KeyGen(const shared_ptr<LPCryptoParameters<Poly>> cryptoPar
 
 }
 
-std::shared_ptr<RGSWCiphertext> RGSWOps::Encrypt(const RGSWPublicKey &pk, Poly &m) {
+template <class Element>
+std::shared_ptr<RGSWCiphertext<Element>> RGSWOps<Element>::Encrypt(const RGSWPublicKey<Element> &pk, Element &m) {
 
-	const auto cryptoParamsBGV = std::dynamic_pointer_cast<LPCryptoParametersBGV<Poly>>(pk.GetCryptoParameters());
+	const auto cryptoParamsBGV = std::dynamic_pointer_cast<LPCryptoParametersBGV<Element>>(pk.GetCryptoParameters());
 
-	shared_ptr<RGSWCiphertext> ciphertext = std::make_shared<RGSWCiphertext>(cryptoParamsBGV);
+	shared_ptr<RGSWCiphertext<Element>> ciphertext = std::make_shared<RGSWCiphertext<Element>>(cryptoParamsBGV);
 
-	const shared_ptr<ILParams> elementParams = cryptoParamsBGV->GetElementParams();
+	const shared_ptr<typename Element::Params> elementParams = cryptoParamsBGV->GetElementParams();
 
 	const auto p = cryptoParamsBGV->GetPlaintextModulus();
 
-	const Poly::TugType tug;
+	const typename Element::TugType tug;
 
 	m.SwitchFormat();
 
@@ -67,39 +73,44 @@ std::shared_ptr<RGSWCiphertext> RGSWOps::Encrypt(const RGSWPublicKey &pk, Poly &
 
 	l = std::ceil((double)l/(double)base);
 
-	BigInteger powersOfBaseInit(1);//2^r
+	typename Element::Integer powersOfBaseInit(1);//2^r
 
-	const Poly &a = pk.GetPublicElements().GetA();
-	const Poly &b = pk.GetPublicElements().GetB();
+	const Element &a = pk.GetPublicElements().GetA();
+	const Element &b = pk.GetPublicElements().GetB();
 
 	for (usint i = 0; i < l; i++) {
 
-		Poly r(tug, elementParams, Format::EVALUATION); //r is the random noise
+		Element r(tug, elementParams, Format::EVALUATION); //r is the random noise
 
-		Poly e0(tug, elementParams, Format::EVALUATION);
+		//Element e0(tug, elementParams, Format::EVALUATION);
 
-		Poly e1(tug, elementParams, Format::EVALUATION);
+		//Element e1(tug, elementParams, Format::EVALUATION);
 
-		Poly bPoly(b * r + p * e1 + m * (powersOfBaseInit << (base * i)));
+		//Element bPoly(b * r + p * e1 + m * (powersOfBaseInit << (base * i)));
 
-		Poly aPoly(a * r + p * e0);
+		//Element aPoly(a * r + p * e0);
+
+		Element bPoly(b * r  + m * (powersOfBaseInit << (base * i)));
+
+		Element aPoly(a * r );
+
 
 		ciphertext->SetElementAtIndex(i, std::move(bPoly), std::move(aPoly));
 	}
 
-	powersOfBaseInit = BigInteger(1);
+	powersOfBaseInit = typename Element::Integer(1);
 
 	for (usint i = 0; i < l; i++) {
 
-		Poly r(tug, elementParams, Format::EVALUATION); //r is the random noise
+		Element r(tug, elementParams, Format::EVALUATION); //r is the random noise
 
-		Poly e0(tug, elementParams, Format::EVALUATION);
+		Element e0(tug, elementParams, Format::EVALUATION);
 
-		Poly e1(tug, elementParams, Format::EVALUATION);
+		Element e1(tug, elementParams, Format::EVALUATION);
 
-		Poly bPoly(b * r + p * e1);
+		Element bPoly(b * r + p * e1);
 
-		Poly aPoly(a * r + p * e0 + m * (powersOfBaseInit << (base * i)));
+		Element aPoly(a * r + p * e0 + m * (powersOfBaseInit << (base * i)));
 
 		ciphertext->SetElementAtIndex(i + l, std::move(bPoly), std::move(aPoly));
 	}
@@ -107,8 +118,9 @@ std::shared_ptr<RGSWCiphertext> RGSWOps::Encrypt(const RGSWPublicKey &pk, Poly &
 	return ciphertext;
 }
 
-Poly RGSWOps::Decrypt(const std::shared_ptr<RGSWCiphertext> ciphertext,const std::shared_ptr<RGSWSecretKey> sk) {
-	Poly result;
+template <class Element>
+Element RGSWOps<Element>::Decrypt(const std::shared_ptr<RGSWCiphertext<Element>> ciphertext,const std::shared_ptr<RGSWSecretKey<Element>> sk) {
+	Element result;
 	//std::vector<Poly> toShowAsOutput;
 
 	const auto cryptoParams = sk->GetCryptoParameters();
@@ -116,13 +128,13 @@ Poly RGSWOps::Decrypt(const std::shared_ptr<RGSWCiphertext> ciphertext,const std
 	const auto &c = ciphertext->GetElements();
 	const auto &s = sk->GetSecretKey();
 
-	Poly b = c[0].GetB() - s * c[0].GetA();
+	Element b = c[0].GetB() - s * c[0].GetA();
 
 	b.SwitchFormat();
 
 	result = b.Mod(p);
 
-	std::cout<< "Ciphertext size is "<< ciphertext->GetElements().size()<<'\n';
+	//std::cout<< "Ciphertext size is "<< ciphertext->GetElements().size()<<'\n';
 
 	/*for(usint i=1;i<ciphertext->GetElements().size();i++){
 		b = c[i].GetB()-s*c[i].GetA();
@@ -133,16 +145,19 @@ Poly RGSWOps::Decrypt(const std::shared_ptr<RGSWCiphertext> ciphertext,const std
 
 	return result;
 }
-RGSWCiphertext RGSWOps::Add(const RGSWCiphertext& a, const RGSWCiphertext& b) {
-	const auto cryptoParamsBGV = std::dynamic_pointer_cast<LPCryptoParametersBGV<Poly>>(a.GetCryptoParameters());
-	RGSWCiphertext result(cryptoParamsBGV);
+
+template <class Element>
+RGSWCiphertext<Element> RGSWOps<Element>::Add(const RGSWCiphertext<Element>& a, const RGSWCiphertext<Element>& b) {
+	const auto cryptoParamsBGV = std::dynamic_pointer_cast<LPCryptoParametersBGV<Element>>(a.GetCryptoParameters());
+	RGSWCiphertext<Element> result(cryptoParamsBGV);
 	return result;
 }
 
-std::shared_ptr<RGSWCiphertext> RGSWOps::ScalarMultiply(const BigInteger &a,const std::shared_ptr<RGSWCiphertext> ciphertext) {
+template <class Element>
+std::shared_ptr<RGSWCiphertext<Element>> RGSWOps<Element>::ScalarMultiply(const BigInteger &a,const std::shared_ptr<RGSWCiphertext<Element>> ciphertext) {
 	const auto cryptoParams = ciphertext->GetCryptoParameters();
-	const auto cryptoParamsBGV = std::dynamic_pointer_cast<LPCryptoParametersBGV<Poly>>(cryptoParams);
-	auto result = make_shared<RGSWCiphertext>(cryptoParamsBGV);
+	const auto cryptoParamsBGV = std::dynamic_pointer_cast<LPCryptoParametersBGV<Element>>(cryptoParams);
+	auto result = make_shared<RGSWCiphertext<Element>>(cryptoParamsBGV);
 
 	auto logQ = ciphertext->GetElements().size();
 	auto r = cryptoParams->GetRelinWindow();
@@ -151,31 +166,32 @@ std::shared_ptr<RGSWCiphertext> RGSWOps::ScalarMultiply(const BigInteger &a,cons
 	for(usint i=0;i<logQ;i++){
 		BigInteger scalarValue = a<<(i*r);
 		usint digit = scalarValue.GetDigitAtIndexForBase(1,base);
-		Poly a = BigInteger(digit)*ciphertext->GetElements().at(0).GetA();
-		Poly b = BigInteger(digit)*ciphertext->GetElements().at(0).GetB();
+		Element a = typename Element::Integer(digit)*ciphertext->GetElements().at(0).GetA();
+		Element b = typename Element::Integer(digit)*ciphertext->GetElements().at(0).GetB();
 		for(usint j=1;j<logQ;j++){
 			digit = scalarValue.GetDigitAtIndexForBase(j+1,base);
-			a+= BigInteger(digit)*ciphertext->GetElements().at(j).GetA();
-			b+= BigInteger(digit)*ciphertext->GetElements().at(j).GetB();
+			a+= typename Element::Integer(digit)*ciphertext->GetElements().at(j).GetA();
+			b+= typename Element::Integer(digit)*ciphertext->GetElements().at(j).GetB();
 		}
 		result->SetElementAtIndex(i,std::move(a),std::move(b));
 	}
 	return result;
 }
 
-std::shared_ptr<RGSWCiphertext> RingMultiply(const Poly& a, const std::shared_ptr<RGSWCiphertext> cipher) {
+template <class Element>
+std::shared_ptr<RGSWCiphertext<Element>> RGSWOps<Element>::RingMultiply(const Element& a, const std::shared_ptr<RGSWCiphertext<Element>> cipher) {
 
-	const auto cryptoParamsBGV = std::dynamic_pointer_cast<LPCryptoParametersBGV<Poly>>(cipher->GetCryptoParameters());
-	shared_ptr<RGSWCiphertext> result = std::make_shared<RGSWCiphertext>(cryptoParamsBGV);
+	const auto cryptoParamsBGV = std::dynamic_pointer_cast<LPCryptoParametersBGV<Element>>(cipher->GetCryptoParameters());
+	shared_ptr<RGSWCiphertext<Element>> result = std::make_shared<RGSWCiphertext<Element>>(cryptoParamsBGV);
 
 	return result;
 }
 
+template <class Element>
+std::shared_ptr<RGSWCiphertext<Element>> RGSWOps<Element>::Multiply(const std::shared_ptr<RGSWCiphertext<Element>> a, const std::shared_ptr<RGSWCiphertext<Element>> b) {
 
-std::shared_ptr<RGSWCiphertext> RGSWOps::Multiply(const std::shared_ptr<RGSWCiphertext> a, const std::shared_ptr<RGSWCiphertext> b) {
-
-	const auto cryptoParamsBGV = std::dynamic_pointer_cast<LPCryptoParametersBGV<Poly>>(a->GetCryptoParameters());
-	shared_ptr<RGSWCiphertext> result = std::make_shared<RGSWCiphertext>(cryptoParamsBGV);
+	const auto cryptoParamsBGV = std::dynamic_pointer_cast<LPCryptoParametersBGV<Element>>(a->GetCryptoParameters());
+	shared_ptr<RGSWCiphertext<Element>> result = std::make_shared<RGSWCiphertext<Element>>(cryptoParamsBGV);
 
 	usint relinWindow = cryptoParamsBGV->GetRelinWindow();
 	usint N = a->GetElements().size(); //N = 2l

@@ -12,16 +12,17 @@
  */
 namespace lbcrypto {
 
+template <class Element>
 class RGSWOps{
 	public:
 	RGSWOps();
-	static RGSWKeyPair KeyGen(const shared_ptr<LPCryptoParameters<Poly>> cryptoParams);
-	static std::shared_ptr<RGSWCiphertext> Encrypt(const RGSWPublicKey &pk, Poly &m);
-	static Poly Decrypt(const std::shared_ptr<RGSWCiphertext> ciphertext,const std::shared_ptr<RGSWSecretKey> sk);
-	static RGSWCiphertext Add(const RGSWCiphertext& a,const RGSWCiphertext& b);
-	static std::shared_ptr<RGSWCiphertext> ScalarMultiply(const BigInteger &a,const std::shared_ptr<RGSWCiphertext> ciphertext);
-	static std::shared_ptr<RGSWCiphertext> RingMultiply(const Poly& a, const std::shared_ptr<RGSWCiphertext> cipher);
-	static std::shared_ptr<RGSWCiphertext> Multiply(const std::shared_ptr<RGSWCiphertext> a, const std::shared_ptr<RGSWCiphertext> b);
+	static RGSWKeyPair<Element> KeyGen(const shared_ptr<LPCryptoParameters<Element>> cryptoParams);
+	static std::shared_ptr<RGSWCiphertext<Element>> Encrypt(const RGSWPublicKey<Element> &pk, Element &m);
+	static Element Decrypt(const std::shared_ptr<RGSWCiphertext<Element>> ciphertext,const std::shared_ptr<RGSWSecretKey<Element>> sk);
+	static RGSWCiphertext<Element> Add(const RGSWCiphertext<Element>& a,const RGSWCiphertext<Element>& b);
+	static std::shared_ptr<RGSWCiphertext<Element>> ScalarMultiply(const BigInteger &a,const std::shared_ptr<RGSWCiphertext<Element>> ciphertext);
+	static std::shared_ptr<RGSWCiphertext<Element>> RingMultiply(const Element& a, const std::shared_ptr<RGSWCiphertext<Element>> cipher);
+	static std::shared_ptr<RGSWCiphertext<Element>> Multiply(const std::shared_ptr<RGSWCiphertext<Element>> a, const std::shared_ptr<RGSWCiphertext<Element>> b);
 };
 
 

@@ -103,6 +103,14 @@ void ILWECiphertext::SetB(const NativeInteger &b){
 	m_element->SetB(b);
 }
 
+usint ILWECiphertext::GetSizeInBytes(){
+	usint sizeResult =0;
+
+	sizeResult+= sizeof(NativeInteger)*(m_element->GetA().GetLength() +1);
+
+	return sizeResult;
+}
+
 ILWESecretKey::ILWESecretKey(const shared_ptr<ILWEParams> params):ILWEKey(params){}
 
 void ILWESecretKey::SetSKElement(const NativeVector &s){

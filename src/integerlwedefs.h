@@ -72,6 +72,8 @@ public:
 	const NativeInteger& GetB() const;
 
 	void SetB(const NativeInteger &b);
+
+	usint GetSizeInBytes();
 };
 
 class ILWESecretKey:public ILWEKey{
