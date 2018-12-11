@@ -18,6 +18,7 @@ class RGSWOps{
 	RGSWOps();
 	static RGSWKeyPair<Element> KeyGen(const shared_ptr<LPCryptoParameters<Element>> cryptoParams);
 	static std::shared_ptr<RGSWCiphertext<Element>> Encrypt(const RGSWPublicKey<Element> &pk, Element &m);
+	static std::shared_ptr<RGSWCiphertext<Element>> ClearEncrypt(const RGSWPublicKey<Element> &pk, Element &m);
 	static Element Decrypt(const std::shared_ptr<RGSWCiphertext<Element>> ciphertext,const std::shared_ptr<RGSWSecretKey<Element>> sk);
 	static RGSWCiphertext<Element> Add(const RGSWCiphertext<Element>& a,const RGSWCiphertext<Element>& b);
 	static std::shared_ptr<RGSWCiphertext<Element>> ScalarMultiply(const BigInteger &a,const std::shared_ptr<RGSWCiphertext<Element>> ciphertext);

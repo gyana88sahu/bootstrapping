@@ -46,6 +46,7 @@ public:
 
 	void SwitchFormat();
 
+	void ModReduce(const typename Element::Integer &p);
 };
 
 template <class Element>
@@ -79,6 +80,8 @@ public:
 	void SetElementAtIndex(usint idx, Element &&valueB, Element &&valueA);
 
 	void SwitchFormat();
+
+	void ModReduce();
 
 	usint GetSizeInBytes();
 };

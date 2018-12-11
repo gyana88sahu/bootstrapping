@@ -160,7 +160,7 @@ inline std::vector<std::vector<shared_ptr<ILWECiphertext>>> ISLWEOps::KeySwitchG
 	}
 
 
-	return std::move(hint);
+	return hint;
 }
 
 inline shared_ptr<ILWECiphertext> ISLWEOps::ModSwitch(shared_ptr<ILWECiphertext> c, NativeInteger &qDash){

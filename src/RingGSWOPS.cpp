@@ -119,6 +119,48 @@ std::shared_ptr<RGSWCiphertext<Element>> RGSWOps<Element>::Encrypt(const RGSWPub
 }
 
 template <class Element>
+std::shared_ptr<RGSWCiphertext<Element>> RGSWOps<Element>::ClearEncrypt(const RGSWPublicKey<Element> &pk, Element &m){
+
+	const auto cryptoParamsBGV = std::dynamic_pointer_cast<LPCryptoParametersBGV<Element>>(pk.GetCryptoParameters());
+
+	shared_ptr<RGSWCiphertext<Element>> cleartext = std::make_shared<RGSWCiphertext<Element>>(cryptoParamsBGV);
+
+	const shared_ptr<typename Element::Params> elementParams = cryptoParamsBGV->GetElementParams();
+
+	m.SwitchFormat();
+
+	usint base = cryptoParamsBGV->GetRelinWindow();
+
+	usint l = elementParams->GetModulus().GetMSB();
+
+	l = std::ceil((double)l/(double)base);
+
+	typename Element::Integer powersOfBaseInit(1);//2^r
+
+	for (usint i = 0; i < l; i++) {
+
+		Element bPoly(m * (powersOfBaseInit << (base * i)));
+
+		Element aPoly(elementParams, EVALUATION, true);
+
+		cleartext->SetElementAtIndex(i, std::move(bPoly), std::move(aPoly));
+	}
+
+	powersOfBaseInit = typename Element::Integer(1);
+
+	for (usint i = 0; i < l; i++) {
+
+		Element bPoly(elementParams, EVALUATION, true);
+
+		Element aPoly(m * (powersOfBaseInit << (base * i)));
+
+		cleartext->SetElementAtIndex(i + l, std::move(bPoly), std::move(aPoly));
+	}
+
+	return cleartext;
+}
+
+template <class Element>
 Element RGSWOps<Element>::Decrypt(const std::shared_ptr<RGSWCiphertext<Element>> ciphertext,const std::shared_ptr<RGSWSecretKey<Element>> sk) {
 	Element result;
 	//std::vector<Poly> toShowAsOutput;
@@ -220,6 +262,7 @@ std::shared_ptr<RGSWCiphertext<Element>> RGSWOps<Element>::Multiply(const std::s
 
 	return result;
 }
+
 
 }
 #endif

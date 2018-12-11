@@ -60,6 +60,12 @@ void LWEForm<Element>::SwitchFormat(){
 }
 
 template <class Element>
+void LWEForm<Element>::ModReduce(const typename Element::Integer &p){
+	this->a.ModReduce(p);
+	this->b.ModReduce(p);
+}
+
+template <class Element>
 RGSWKey<Element>::RGSWKey(const std::shared_ptr<LPCryptoParameters<Element>> params){
 	this->cryptoParams = params;
 }
@@ -83,6 +89,14 @@ template <class Element>
 void RGSWCiphertext<Element>::SwitchFormat(){
 	for(usint i=0;i<m_element.size();i++){
 		m_element.at(i).SwitchFormat();
+	}
+}
+
+template <class Element>
+void RGSWCiphertext<Element>::ModReduce(){
+	const auto &p = this->GetCryptoParameters()->GetPlaintextModulus();
+	for (usint i = 0; i < m_element.size(); i++) {
+		m_element.at(i).ModReduce(p);
 	}
 }
 

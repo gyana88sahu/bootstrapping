@@ -52,14 +52,7 @@ void runProposalExperimentForRGSWTimings();
 
 int main(int argc, char *argv[]){
 
-	//runBootstrappingExperiment(1,0);
-	//runConvolutionTest();
-	//runConvolutionTestofTestingVector();
-	//runSingleCiphertextBootstrappingExperiment runs good
 	runSingleCiphertextBootstrappingExperiment<NativePoly>(1);
-	//runProposalExperimentForSize(200,1,1024);
-	//runProposalExperimentForBootstrappingKeySize<Poly>(200,1,1024);
-	//runProposalExperimentForRGSWTimings<Poly>();
 
 	return 0;
 
@@ -258,7 +251,7 @@ void runSingleCiphertextBootstrappingExperiment(usint m){
 	std::cout << "ring GSW scheme Key Genetation took "<< (end - start) <<" ms to finish\n\n";
 
 	auto bEncoding = GetEncoding<Element>(cryptoParamRGSW, b.ConvertToInt(), q.ConvertToInt());
-	auto bootCipher = RGSWOps<Element>::Encrypt(*kpRGSW.publicKey, bEncoding);
+	auto bootCipher = RGSWOps<Element>::ClearEncrypt(*kpRGSW.publicKey, bEncoding);
 	usint l = std::ceil((double) q.GetMSB() / (double) 6);
 
 	//usint message = ISLWEOps::Decrypt(cipher, *kp.secretkey);
@@ -283,7 +276,7 @@ void runSingleCiphertextBootstrappingExperiment(usint m){
 
 	auto aggVector = GenerateAggregationVector(cryptoParamRGSW);
 	//std::cout << aggVector << '\n';
-	auto aggCipher = RGSWOps<Element>::Encrypt(*kpRGSW.publicKey, aggVector);
+	auto aggCipher = RGSWOps<Element>::ClearEncrypt(*kpRGSW.publicKey, aggVector);
 	bootCipher = RGSWOps<Element>::Multiply(bootCipher, aggCipher);
 
 	auto finalValue = RGSWOps<Element>::Decrypt(bootCipher, kpRGSW.secretKey);
