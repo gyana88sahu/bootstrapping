@@ -1,22 +1,27 @@
 #include <palisade.h>
 #include "../src/crtFunc.cpp"
+#include "../src/crtpoly.cpp"
 
 using namespace std;
 using namespace lbcrypto;
 
-template <class T>
+template<class T>
 void crtModReduceExp();
 
-int main(){
+template<class T>
+void crtPolyModReduceExp();
 
-	crtModReduceExp<NativePoly>();
+int main() {
+
+	//crtModReduceExp<NativePoly>();
+	crtPolyModReduceExp<CRTPoly>();
 
 	return 0;
 }
 
+template<class T>
+void crtModReduceExp() {
 
-template <class T>
-void crtModReduceExp(){
 	usint m = 16;
 	usint p = 5;
 
@@ -30,7 +35,7 @@ void crtModReduceExp(){
 	BigInteger q("302233920629906514542129");
 	BigInteger r("0 ");
 
-	typename T::Integer qDash(q1*q2);
+	typename T::Integer qDash(q1 * q2);
 	typename T::Integer rDash(0);
 
 	float stdDev = 4;
@@ -39,19 +44,24 @@ void crtModReduceExp(){
 	usint relinWindow = 1;
 
 	auto ep1 = make_shared<typename T::Params>(m, q1, r1);
-	auto params1 = make_shared < LPCryptoParametersBGV <T>> (ep1, p, stdDev, assm, sL, relinWindow, RLWE);
+	auto params1 = make_shared<LPCryptoParametersBGV<T>>(ep1, p, stdDev, assm,
+			sL, relinWindow, RLWE);
 
 	auto ep2 = make_shared<typename T::Params>(m, q2, r2);
-	auto params2 = make_shared < LPCryptoParametersBGV<T>> (ep2, p, stdDev, assm, sL, relinWindow, RLWE);
+	auto params2 = make_shared<LPCryptoParametersBGV<T>>(ep2, p, stdDev, assm,
+			sL, relinWindow, RLWE);
 
 	auto ep3 = make_shared<typename T::Params>(m, q3, r3);
-	auto params3 = make_shared < LPCryptoParametersBGV <T>> (ep3, p, stdDev, assm, sL, relinWindow, RLWE);
+	auto params3 = make_shared<LPCryptoParametersBGV<T>>(ep3, p, stdDev, assm,
+			sL, relinWindow, RLWE);
 
 	auto ep = make_shared<typename Poly::Params>(m, q, r);
-	auto params = make_shared < LPCryptoParametersBGV < Poly >> (ep, p, stdDev, assm, sL, relinWindow, RLWE);
+	auto params = make_shared<LPCryptoParametersBGV<Poly>>(ep, p, stdDev, assm,
+			sL, relinWindow, RLWE);
 
 	auto epDash = make_shared<typename T::Params>(m, qDash, rDash);
-	auto paramsDash = make_shared < LPCryptoParametersBGV <T>> (epDash, p, stdDev, assm, sL, relinWindow, RLWE);
+	auto paramsDash = make_shared<LPCryptoParametersBGV<T>>(epDash, p, stdDev,
+			assm, sL, relinWindow, RLWE);
 
 	T s1(params1->GetDiscreteGaussianGenerator(), ep1, COEFFICIENT);
 	T s2(s1);
@@ -92,9 +102,8 @@ void crtModReduceExp(){
 	T b3 = a3 * s3 + p * e3;
 
 	//Run mod reduce on the lwe samples
-	auto lweA = modReduce(a1, a2, a3, p);//it takes everything in EVAL domain and outputs in EVAL domain
-	auto lweB = modReduce(b1, b2, b3, p);//it takes everything in EVAL domain and outputs in EVAL domain
-
+	auto lweA = modReduce(a1, a2, a3, p); //it takes everything in EVAL domain and outputs in EVAL domain
+	auto lweB = modReduce(b1, b2, b3, p); //it takes everything in EVAL domain and outputs in EVAL domain
 
 	T a1Dash(lweA[0]);
 	T a2Dash(lweA[1]);
@@ -103,7 +112,6 @@ void crtModReduceExp(){
 
 	auto origCheck1 = b1 - a1 * s1;
 	auto origCheck2 = b2 - a2 * s2;
-
 
 	auto check1 = b1Dash - a1Dash * s1;
 	auto check2 = b2Dash - a2Dash * s2;
@@ -129,14 +137,81 @@ void crtModReduceExp(){
 	std::cout << origCheck2 << '\n';
 	std::cout << '\n';
 
-	auto bDash = CRTPoly<T>(b1Dash, b2Dash);
-	auto aDash = CRTPoly<T>(a1Dash, a2Dash);
+	auto bDash = CRTPolynomial<T>(b1Dash, b2Dash);
+	auto aDash = CRTPolynomial<T>(a1Dash, a2Dash);
 
-	auto aDashsDash = PolyMult(aDash,sDash);
+	auto aDashsDash = PolyMult(aDash, sDash);
 
-	std::cout << "Printing aDashsDash \n"<< aDashsDash << '\n' << '\n';
-	std::cout << "Printing bDash \n"<< bDash << '\n' << '\n';
+	std::cout << "Printing aDashsDash \n" << aDashsDash << '\n' << '\n';
+	std::cout << "Printing bDash \n" << bDash << '\n' << '\n';
 
+}
 
+template<typename T>
+void crtPolyModReduceExp() {
+	usint m = 16;
+	usint p = 5;
+	usint numOfTower = 3;
+	NativeInteger modulusP(p);
+
+	std::vector < NativeInteger > moduli(numOfTower);
+	std::vector < NativeInteger > rootsOfUnity(numOfTower);
+
+	moduli[0] = NativeInteger(33554593);
+	moduli[1] = NativeInteger(134218081);
+	moduli[2] = NativeInteger(536871089);
+
+	rootsOfUnity[0] = NativeInteger(31348180);
+	rootsOfUnity[1] = NativeInteger(127268772);
+	rootsOfUnity[2] = NativeInteger(469314841);
+
+	float stdDev = 4;
+	float assm = 9; //assuranceMeasure
+	float sL = 1.006; //securityLevel
+	usint relinWindow = 16;
+	auto ep = make_shared<typename T::Params>(m, moduli, rootsOfUnity);
+
+	auto params = make_shared<LPCryptoParametersBGV<T>>(ep, p, stdDev, assm, sL,
+			relinWindow, RLWE);
+	typename T::DugType dug;
+	const typename T::TugType tug;
+
+	T s(tug, ep, COEFFICIENT);
+	cout << "Printing secret key\n" << endl;
+	cout << s << "\n\n";
+	s.SwitchFormat();
+
+	//cout << s << endl;
+	T a(dug, ep, EVALUATION);
+	cout << "Printing a polynomial \n" << endl;
+	std::cout << a << "\n\n";
+
+	T e(params->GetDiscreteGaussianGenerator(), ep, EVALUATION);
+	T b = a * s + p * e;
+
+	cout << "Printing error polynomial \n" << endl;
+	e.SwitchFormat();
+	std::cout << e << "\n\n";
+	e.SwitchFormat();
+
+	auto check = b - a * s;
+	check.SwitchFormat();
+	std::cout << check << std::endl;
+
+	a.ModReduce(p);
+	b.ModReduce(p);
+	s.DropLastElement();
+
+	check = b - a * s;
+	check.SwitchFormat();
+	std::cout << check << std::endl;
+
+	auto bLType = b.CRTInterpolate();
+	auto aLType = a.CRTInterpolate();
+	auto sLType = s.CRTInterpolate();
+
+	auto checkLtype = bLType - PolyMult(aLType,sLType);
+	checkLtype.SwitchFormat();
+	std::cout << checkLtype << std::endl;
 
 }

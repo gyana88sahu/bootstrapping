@@ -2,8 +2,10 @@
 #define LBCRYPTO_CRYPTO_RGSW_C
 
 #include "ringgsw.h"
+#include "crtpoly.cpp"
 
 namespace lbcrypto {
+
 
 template <class Element>
 LWEForm<Element>::LWEForm(const Element& a, const Element &b){
@@ -12,8 +14,9 @@ LWEForm<Element>::LWEForm(const Element& a, const Element &b){
 }
 
 template <class Element>
-LWEForm<Element>::LWEForm(Element &&a, Element &&b):a(std::move(a)),b(std::move(b)){
-
+LWEForm<Element>::LWEForm(Element &&a, Element &&b){
+	this->a = std::move(a);
+	this->b = std::move(b);
 }
 
 template <class Element>
@@ -66,6 +69,37 @@ void LWEForm<Element>::ModReduce(const typename Element::Integer &p){
 }
 
 template <class Element>
+void LWEForm<Element>::SetAForTowerIdx(const NativePoly &a, usint t){
+	throw std::runtime_error("implementation not availble for this element type");
+}
+
+template <class Element>
+void LWEForm<Element>::SetBForTowerIdx(const NativePoly &b, usint t){
+	throw std::runtime_error("implementation not availble for this element type");
+}
+
+template <class Element>
+void LWEForm<Element>::SetAForTowerIdx(NativePoly &&a, usint t){
+	throw std::runtime_error("implementation not availble for this element type");
+}
+
+template <class Element>
+void LWEForm<Element>::SetBForTowerIdx(NativePoly &&b, usint t){
+	throw std::runtime_error("implementation not availble for this element type");
+}
+
+template <>
+inline void LWEForm<CRTPoly>::SetAForTowerIdx(NativePoly &&aPoly, usint t){
+	this->a.SetElementAtIndex(t, std::move(aPoly));
+}
+
+template <>
+inline void LWEForm<CRTPoly>::SetBForTowerIdx(NativePoly &&bPoly, usint t){
+	this->b.SetElementAtIndex(t, std::move(bPoly));
+}
+
+
+template <class Element>
 RGSWKey<Element>::RGSWKey(const std::shared_ptr<LPCryptoParameters<Element>> params){
 	this->cryptoParams = params;
 }
@@ -98,6 +132,28 @@ void RGSWCiphertext<Element>::ModReduce(){
 	for (usint i = 0; i < m_element.size(); i++) {
 		m_element.at(i).ModReduce(p);
 	}
+}
+
+template <class Element>
+void RGSWCiphertext<Element>::SetElementAtIndexForTower(usint rowIdx, usint t, const NativePoly &valueB, const NativePoly &valueA){
+	throw std::runtime_error("not implemented");
+}
+
+template <class Element>
+void RGSWCiphertext<Element>::SetElementAtIndexForTower(usint rowIdx, usint t, NativePoly &&valueB, NativePoly &&valueA){
+	throw std::runtime_error("not implemented");
+}
+
+template<>
+inline void RGSWCiphertext<CRTPoly>::SetElementAtIndexForTower(usint rowIdx, usint t, const NativePoly &valueB, const NativePoly &valueA){
+	m_element[rowIdx].SetAForTowerIdx(valueA, t);
+	m_element[rowIdx].SetBForTowerIdx(valueB, t);
+}
+
+template <>
+inline void RGSWCiphertext<CRTPoly>::SetElementAtIndexForTower(usint rowIdx, usint t, NativePoly &&valueB, NativePoly &&valueA){
+	m_element[rowIdx].SetAForTowerIdx(std::move(valueA), t);
+	m_element[rowIdx].SetBForTowerIdx(std::move(valueB), t);
 }
 
 template <class Element>

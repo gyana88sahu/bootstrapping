@@ -122,7 +122,7 @@ inline NativeInteger CRT<NativeInteger>(const NativeInteger &n1, const NativeInt
 
 //Expects a and b in EVAL ; output is in COEFF
 template <class T>
-const T CRTPoly(const T &a, const T &b){
+const T CRTPolynomial(const T &a, const T &b){
 
 	if(a.GetFormat()!=EVALUATION || b.GetFormat()!=EVALUATION){
 		throw std::runtime_error("wrong format");

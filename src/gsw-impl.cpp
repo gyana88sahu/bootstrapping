@@ -10,6 +10,8 @@ template class RGSWOps<Poly>;
 
 template class RGSWOps<NativePoly>;
 
+template class RGSWOps<CRTPoly>;
+
 }
 
 

@@ -13,7 +13,7 @@ template<class T>
 Poly SM(const T &a, const BigInteger &q);
 
 template <class T>
-const T CRTPoly(const T &a, const T &b);
+const T CRTPolynomial(const T &a, const T &b);
 
 //2 parameter crt with arb integer
 template <class T>

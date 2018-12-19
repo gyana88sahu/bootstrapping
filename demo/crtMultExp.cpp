@@ -94,7 +94,7 @@ void crtMultExperiment(){
 	//generate lwe sample a2, b2
 	T a2(dug, ep2, EVALUATION);
 
-	T a = CRTPoly(a1, a2);
+	T a = CRTPolynomial(a1, a2);
 
 	a1.SwitchFormat();
 	a2.SwitchFormat();
@@ -111,7 +111,7 @@ void crtMultExperiment(){
 	auto as2 = a2 * s2;
 	auto as = PolyMult(a, s);
 	cout << as << endl;
-	cout << CRTPoly(as1, as2) << endl;
+	cout << CRTPolynomial(as1, as2) << endl;
 
 }
 

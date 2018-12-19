@@ -19,6 +19,7 @@ void threeModuliExp();
 int main(){
 
 
+	threeModuliExp();
 
 	return 0;
 }

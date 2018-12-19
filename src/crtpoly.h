@@ -72,15 +72,13 @@ public:
 
 	CRTPolyImpl(const std::vector<PolyType> &elements);
 
-	inline static function<CRTPolyType()> Allocator(
-			const shared_ptr<Params> params, Format format) {
+	inline static function<CRTPolyType()> Allocator(const shared_ptr<Params> params, Format format) {
 		return [=]() {
 			return CRTPolyType(params, format, true);
 		};
 	}
 
-	inline static function<CRTPolyType()> MakeDiscreteGaussianCoefficientAllocator(
-			shared_ptr<Params> params, Format resultFormat, double stddev) {
+	inline static function<CRTPolyType()> MakeDiscreteGaussianCoefficientAllocator(shared_ptr<Params> params, Format resultFormat, double stddev) {
 		return [=]() {
 			DggType dgg(stddev);
 			CRTPolyType ilvec(dgg, params, COEFFICIENT);
@@ -89,8 +87,7 @@ public:
 		};
 	}
 
-	inline static function<CRTPolyType()> MakeDiscreteUniformAllocator(
-			shared_ptr<Params> params, Format format) {
+	inline static function<CRTPolyType()> MakeDiscreteUniformAllocator(shared_ptr<Params> params, Format format) {
 		return [=]() {
 			DugType dug;
 			return CRTPolyType(dug, params, format);
@@ -104,14 +101,16 @@ public:
 	 *
 	 * @param &&element DCRTPoly to move from
 	 */
-	CRTPolyImpl(const CRTPolyType &&element);
+	CRTPolyImpl(CRTPolyType &&element);
 
 	//CLONE OPERATIONS
-	CRTPolyType Clone() const;
+	CRTPolyType Clone() const{
+		return std::move(CRTPolyImpl(*this));
+	}
 
 
 	CRTPolyType CloneEmpty() const {
-		return std::move(CRTPolyImpl());
+		return std::move(CRTPolyType());
 	}
 
 	/**
@@ -154,14 +153,14 @@ public:
 		if (m_vectors.size() == 0)
 			return 0;
 
-		return m_vectors[0]->GetValues().GetLength();
+		return m_vectors[0].GetValues().GetLength();
 	}
 
 	const PolyType &GetElementAtIndex(usint i) const;
 
 	usint GetNumOfElements() const;
 
-	const std::vector<shared_ptr<PolyType>>& GetAllElements() const;
+	const std::vector<PolyType>& GetAllElements() const;
 
 	Format GetFormat() const;
 
@@ -198,10 +197,24 @@ public:
 	CRTPolyType AutomorphismTransform(const usint &i) const {
 		CRTPolyType result(*this);
 		for (usint k = 0; k < m_vectors.size(); k++) {
-			*result.m_vectors[k] = m_vectors[k]->AutomorphismTransform(i);
+			result.m_vectors[k] = m_vectors[k].AutomorphismTransform(i);
 		}
 		return result;
 	}
+
+	CRTPolyType Transpose() const {
+
+		if (m_format == COEFFICIENT)
+			throw std::logic_error(
+					"DCRTPolyImpl element transposition is currently implemented only in the Evaluation representation.");
+		else {
+			usint m = m_params->GetCyclotomicOrder();
+			return AutomorphismTransform(m - 1);
+		}
+
+	}
+
+
 
 	CRTPolyType Plus(const CRTPolyType &element) const;
 
@@ -227,16 +240,16 @@ public:
 
 	const CRTPolyType& operator+=(const Integer &element) {
 		for (usint i = 0; i < this->GetNumOfElements(); i++) {
-			*this->m_vectors[i] +=
-					(element.Mod(this->m_vectors[i]->GetModulus())).ConvertToInt();
+			this->m_vectors[i] +=
+					(element.Mod(this->m_vectors[i].GetModulus())).ConvertToInt();
 		}
 		return *this;
 	}
 
 	const CRTPolyType& operator-=(const Integer &element) {
 		for (usint i = 0; i < this->GetNumOfElements(); i++) {
-			*this->m_vectors[i] -=
-					(element.Mod(this->m_vectors[i]->GetModulus())).ConvertToInt();
+			this->m_vectors[i] -=
+					(element.Mod(this->m_vectors[i].GetModulus())).ConvertToInt();
 		}
 		return *this;
 	}
@@ -265,6 +278,10 @@ public:
 
 	void SetElementAtIndex(usint index, const PolyType &element) {
 		m_vectors[index] = element;
+	}
+
+	void SetElementAtIndex(usint index, PolyType &&element) {
+		m_vectors[index] = std::move(element);
 	}
 
 	void SetValuesToZero();
@@ -354,7 +371,7 @@ private:
 	shared_ptr<Params> m_params;
 
 	// array of vectors used for double-CRT presentation
-	std::vector<std::shared_ptr<PolyType>> m_vectors;
+	std::vector<PolyType> m_vectors;
 
 	// Either Format::EVALUATION (0) or Format::COEFFICIENT (1)
 	Format m_format;

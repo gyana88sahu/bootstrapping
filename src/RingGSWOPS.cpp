@@ -172,10 +172,14 @@ Element RGSWOps<Element>::Decrypt(const std::shared_ptr<RGSWCiphertext<Element>>
 
 	Element b = c[0].GetB() - s * c[0].GetA();
 
+	auto bCheck = b.CRTInterpolate();
+
 	b.SwitchFormat();
 
-	result = b.Mod(p);
+	//result = b.Mod(p);
+	auto resultCheck = bCheck.Mod(p);
 
+	std::cout << resultCheck << std::endl;
 	//std::cout<< "Ciphertext size is "<< ciphertext->GetElements().size()<<'\n';
 
 	/*for(usint i=1;i<ciphertext->GetElements().size();i++){
@@ -261,6 +265,153 @@ std::shared_ptr<RGSWCiphertext<Element>> RGSWOps<Element>::Multiply(const std::s
 	}
 
 	return result;
+}
+
+template <>
+inline std::shared_ptr<RGSWCiphertext<CRTPoly>> RGSWOps<CRTPoly>::Encrypt(const RGSWPublicKey<CRTPoly> &pk, CRTPoly &m){
+
+	const auto cryptoParamsBGV = std::dynamic_pointer_cast<LPCryptoParametersBGV<CRTPoly>>(pk.GetCryptoParameters());
+
+	shared_ptr<RGSWCiphertext<CRTPoly>> ciphertext = std::make_shared<RGSWCiphertext<CRTPoly>>(cryptoParamsBGV);
+
+	const auto elementParams = cryptoParamsBGV->GetElementParams();
+
+	const auto p = cryptoParamsBGV->GetPlaintextModulus();
+
+	const CRTPoly::TugType tug;
+
+	m.SwitchFormat();
+
+	usint base = cryptoParamsBGV->GetRelinWindow();
+
+	usint l = elementParams->GetParams().back()->GetModulus().GetMSB();
+
+	l = std::ceil((double) l / (double) base);
+
+	CRTPoly::Integer powersOfBaseInit(1); //2^r
+
+	const CRTPoly &a = pk.GetPublicElements().GetA();
+	const CRTPoly &b = pk.GetPublicElements().GetB();
+
+	for (usint i = 0; i < l; i++) {
+
+		CRTPoly r(tug, elementParams, Format::EVALUATION); //r is the random noise
+
+		CRTPoly e0(tug, elementParams, Format::EVALUATION);
+
+		CRTPoly e1(tug, elementParams, Format::EVALUATION);
+
+		CRTPoly bPoly(b * r + p * e1 + m * (powersOfBaseInit << (base * i)));
+
+		CRTPoly aPoly(a * r + p * e0);
+
+		ciphertext->SetElementAtIndex(i, std::move(bPoly), std::move(aPoly));
+	}
+
+	powersOfBaseInit = CRTPoly::Integer(1);
+
+	for (usint i = 0; i < l; i++) {
+
+		CRTPoly r(tug, elementParams, Format::EVALUATION); //r is the random noise
+
+		CRTPoly e0(tug, elementParams, Format::EVALUATION);
+
+		CRTPoly e1(tug, elementParams, Format::EVALUATION);
+
+		CRTPoly bPoly(b * r + p * e1);
+
+		CRTPoly aPoly(a * r + p * e0 + m * (powersOfBaseInit << (base * i)));
+
+		ciphertext->SetElementAtIndex(i + l, std::move(bPoly), std::move(aPoly));
+	}
+
+	return ciphertext;
+}
+
+
+template <>
+inline std::shared_ptr<RGSWCiphertext<CRTPoly>> RGSWOps<CRTPoly>::Multiply(const std::shared_ptr<RGSWCiphertext<CRTPoly>> cipherA, const std::shared_ptr<RGSWCiphertext<CRTPoly>> cipherB) {
+
+	if (cipherA->GetElements().size() != cipherB->GetElements().size()) {
+		throw std::runtime_error("unequal ciphertext size provided");
+	}
+
+	const auto cryptoParamsBGV = std::dynamic_pointer_cast<LPCryptoParametersBGV<CRTPoly>>(cipherA->GetCryptoParameters());
+	shared_ptr<RGSWCiphertext<CRTPoly>> result = std::make_shared<RGSWCiphertext<CRTPoly>>(cryptoParamsBGV);
+
+	usint relinWindow = cryptoParamsBGV->GetRelinWindow();
+	auto crtParam = cryptoParamsBGV->GetElementParams();
+
+	usint l = cipherA->GetElements().size()>>1;
+
+	usint nTowers = cipherA->GetElements().at(0).GetA().GetParams()->GetParams().size(); //crt size
+
+	usint nBitsInQPrime = cipherA->GetElements().at(0).GetA().GetElementAtIndex(nTowers-2).GetModulus().GetMSB();//QPrime is the second largest modulus in crt
+	usint lPrime = std::ceil((double) nBitsInQPrime / (double) relinWindow); //relinearization window of largest modulus after modulus reduction
+	usint NPrime = lPrime << 1;
+
+	//initialize the result ciphertext
+	for (usint rowIdx = 0; rowIdx < NPrime; rowIdx++) {
+		CRTPoly aEmpty(crtParam, EVALUATION, true);
+		CRTPoly bEmpty(crtParam, EVALUATION, true);
+		result->SetElementAtIndex(rowIdx, std::move(bEmpty), std::move(aEmpty));
+	}
+
+	for (usint t = 0; t < nTowers; t++) {
+		usint nBitsInTowerMod = cryptoParamsBGV->GetElementParams()->GetParams()[t]->GetModulus().GetMSB();
+		usint lTower = std::ceil((double) nBitsInTowerMod / (double) relinWindow); ///relinearization window of current tower modulus
+
+		for (usint rowIdx = 0; rowIdx < lPrime; rowIdx++) {
+			const auto& aPoly = cipherA->GetElements().at(rowIdx).GetA().GetElementAtIndex(t);
+			const auto& bPoly = cipherA->GetElements().at(rowIdx).GetB().GetElementAtIndex(t);
+			const auto& aPolyDigits = aPoly.BaseDecompose(relinWindow);
+			const auto& bPolyDigits = bPoly.BaseDecompose(relinWindow);
+
+			auto bResultPoly(bPolyDigits[0] * cipherB->GetElements().at(0).GetB().GetElementAtIndex(t));
+			auto aResultPoly(bPolyDigits[0] * cipherB->GetElements().at(0).GetA().GetElementAtIndex(t));
+
+			for (usint j = 1; j < lTower; j++) {
+				bResultPoly+= bPolyDigits[j] * cipherB->GetElements().at(j).GetB().GetElementAtIndex(t);
+				aResultPoly+= bPolyDigits[j] * cipherB->GetElements().at(j).GetA().GetElementAtIndex(t);
+			}
+
+			for (usint j = l; j < (l + lTower); j++) {
+				bResultPoly+= aPolyDigits[j-l] * cipherB->GetElements().at(j).GetB().GetElementAtIndex(t);
+				aResultPoly+= aPolyDigits[j-l] * cipherB->GetElements().at(j).GetA().GetElementAtIndex(t);
+			}
+
+			result->SetElementAtIndexForTower(rowIdx, t, std::move(bResultPoly), std::move(aResultPoly));
+
+		}
+
+		for (usint rowIdx = l; rowIdx < (l+lPrime); rowIdx++) {
+			const auto& aPoly =	cipherA->GetElements().at(rowIdx).GetA().GetElementAtIndex(t);
+			const auto& bPoly = cipherA->GetElements().at(rowIdx).GetB().GetElementAtIndex(t);
+			const auto& aPolyDigits = aPoly.BaseDecompose(relinWindow);
+			const auto& bPolyDigits = bPoly.BaseDecompose(relinWindow);
+
+			auto bResultPoly(bPolyDigits[0] * cipherB->GetElements().at(0).GetB().GetElementAtIndex(t));
+			auto aResultPoly(bPolyDigits[0]	* cipherB->GetElements().at(0).GetA().GetElementAtIndex(t));
+
+			for (usint j = 1; j < lTower; j++) {
+				bResultPoly += bPolyDigits[j] * cipherB->GetElements().at(j).GetB().GetElementAtIndex(t);
+				aResultPoly += bPolyDigits[j] * cipherB->GetElements().at(j).GetA().GetElementAtIndex(t);
+			}
+
+			for (usint j = l; j < (l + lTower); j++) {
+				bResultPoly += aPolyDigits[j - l] * cipherB->GetElements().at(j).GetB().GetElementAtIndex(t);
+				aResultPoly += aPolyDigits[j - l] * cipherB->GetElements().at(j).GetA().GetElementAtIndex(t);
+			}
+
+			result->SetElementAtIndexForTower((rowIdx - l + lPrime), t, std::move(bResultPoly), std::move(aResultPoly));
+
+		}
+	}
+
+	result->ModReduce();
+
+	return result;
+
 }
 
 

@@ -5,6 +5,7 @@
 #include "palisade.h"
 #include "rlwe.h"
 
+
 /**
  * @namespace lbcrypto
  * The namespace of lbcrypto
@@ -47,6 +48,15 @@ public:
 	void SwitchFormat();
 
 	void ModReduce(const typename Element::Integer &p);
+
+	void SetAForTowerIdx(const NativePoly &aPoly, usint t);
+
+	void SetBForTowerIdx(const NativePoly &bPoly, usint t);
+
+	void SetAForTowerIdx(NativePoly &&aPoly, usint t);
+
+	void SetBForTowerIdx(NativePoly &&bPoly, usint t);
+
 };
 
 template <class Element>
@@ -82,6 +92,11 @@ public:
 	void SwitchFormat();
 
 	void ModReduce();
+
+	void SetElementAtIndexForTower(usint rowIdx, usint t, const NativePoly &valueB, const NativePoly &valueA);
+
+	void SetElementAtIndexForTower(usint rowIdx, usint t, NativePoly &&valueB, NativePoly &&valueA);
+
 
 	usint GetSizeInBytes();
 };
